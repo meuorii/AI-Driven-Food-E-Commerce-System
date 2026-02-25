@@ -20,7 +20,7 @@ class UserManager(BaseUserManager):
     
 
 class UsersUser(AbstractBaseUser, PermissionsMixin):
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    id = models.BigAutoField(primary_key=True)
     email = models.EmailField(unique=True, max_length=255)
     role = models.CharField(max_length=20, default='CUSTOMER') 
     is_active = models.BooleanField(default=True)
@@ -45,8 +45,12 @@ class UsersUser(AbstractBaseUser, PermissionsMixin):
 
 # Create your models here.
 class UsersCustomerprofile(models.Model):
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    id = models.BigAutoField(primary_key=True)
     user = models.OneToOneField('users.UsersUser', models.DO_NOTHING)
+    first_name = models.CharField(max_length=50, blank=True, null=True)
+    middle_name = models.CharField(max_length=50, blank=True, null=True)
+    last_name = models.CharField(max_length=50, blank=True, null=True)
+    suffix = models.CharField(max_length=20, blank=True, null=True)
     phone = models.CharField(max_length=20, blank=True, null=True)
     address = models.TextField(blank=True, null=True)
     date_of_birth = models.DateField(blank=True, null=True)
@@ -58,8 +62,12 @@ class UsersCustomerprofile(models.Model):
 
 
 class UsersVendorprofile(models.Model):
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    id = models.BigAutoField(primary_key=True)
     user = models.OneToOneField('users.UsersUser', models.DO_NOTHING)
+    first_name = models.CharField(max_length=50, blank=True, null=True)
+    middle_name = models.CharField(max_length=50, blank=True, null=True)
+    last_name = models.CharField(max_length=50, blank=True, null=True)
+    suffix = models.CharField(max_length=20, blank=True, null=True)
     business_name = models.CharField(max_length=255)
     business_address = models.TextField(blank=True, null=True)
     is_approved = models.BooleanField(blank=True, null=True)

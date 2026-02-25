@@ -3,7 +3,7 @@ from apps.products.models import ProductsFooditem
 
 # Create your models here.
 class ReviewsReview(models.Model):
-    id = models.UUIDField(primary_key=True)
+    id = models.BigAutoField(primary_key=True)
     customer = models.ForeignKey('users.UsersCustomerprofile', models.DO_NOTHING)
     food_item = models.ForeignKey(ProductsFooditem, models.DO_NOTHING)
     rating = models.IntegerField(blank=True, null=True)

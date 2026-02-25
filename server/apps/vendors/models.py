@@ -1,9 +1,8 @@
 from django.db import models
-from apps.users.models import UsersVendorprofile
 
 # Create your models here.
 class VendorsStall(models.Model):
-    id = models.UUIDField(primary_key=True)
+    id = models.BigAutoField(primary_key=True)
     vendor = models.ForeignKey('users.UsersVendorprofile', models.DO_NOTHING)
     name = models.CharField(max_length=255)
     description = models.TextField(blank=True, null=True)

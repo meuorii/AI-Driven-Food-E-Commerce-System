@@ -2,7 +2,7 @@ from django.db import models
 
 # Create your models here.
 class AnalyticsAigenerationlog(models.Model):
-    id = models.UUIDField(primary_key=True)
+    id = models.BigAutoField(primary_key=True)
     execution_date = models.DateField()
     customers_generated = models.IntegerField(blank=True, null=True)
     orders_generated = models.IntegerField(blank=True, null=True)
@@ -16,7 +16,7 @@ class AnalyticsAigenerationlog(models.Model):
 
 
 class AnalyticsDailyanalytics(models.Model):
-    id = models.UUIDField(primary_key=True)
+    id = models.BigAutoField(primary_key=True)
     date = models.DateField(unique=True)
     total_revenue = models.DecimalField(max_digits=12, decimal_places=2, blank=True, null=True)
     total_orders = models.IntegerField(blank=True, null=True)
@@ -29,7 +29,7 @@ class AnalyticsDailyanalytics(models.Model):
 
 
 class AnalyticsFoodperformance(models.Model):
-    id = models.UUIDField(primary_key=True)
+    id = models.BigAutoField(primary_key=True)
     food_item = models.ForeignKey('products.ProductsFooditem', models.DO_NOTHING)
     total_sold = models.IntegerField(blank=True, null=True)
     total_revenue = models.DecimalField(max_digits=12, decimal_places=2, blank=True, null=True)
@@ -41,7 +41,7 @@ class AnalyticsFoodperformance(models.Model):
 
 
 class AnalyticsVendoranalytics(models.Model):
-    id = models.UUIDField(primary_key=True)
+    id = models.BigAutoField(primary_key=True)
     vendor = models.ForeignKey('users.UsersVendorprofile', models.DO_NOTHING)
     total_revenue = models.DecimalField(max_digits=12, decimal_places=2, blank=True, null=True)
     total_orders = models.IntegerField(blank=True, null=True)

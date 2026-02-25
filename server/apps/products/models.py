@@ -2,7 +2,7 @@ from django.db import models
 
 # Create your models here.
 class ProductsCategory(models.Model):
-    id = models.UUIDField(primary_key=True)
+    id = models.BigAutoField(primary_key=True)
     name = models.CharField(unique=True, max_length=255)
 
     class Meta:
@@ -11,7 +11,7 @@ class ProductsCategory(models.Model):
 
 
 class ProductsFooditem(models.Model):
-    id = models.UUIDField(primary_key=True)
+    id = models.BigAutoField(primary_key=True)
     stall = models.ForeignKey('vendors.VendorsStall', models.DO_NOTHING)
     category = models.ForeignKey(ProductsCategory, models.DO_NOTHING)
     name = models.CharField(max_length=255)
