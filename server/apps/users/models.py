@@ -1,6 +1,6 @@
 from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, PermissionsMixin
 from django.db import models
-import uuid
+from simple_history.models import HistoricalRecords
 
 class UserManager(BaseUserManager):
     def create_user(self, email, password=None, role='CUSTOMER', **extra_fields):
@@ -54,7 +54,9 @@ class UsersCustomerprofile(models.Model):
     phone = models.CharField(max_length=20, blank=True, null=True)
     address = models.TextField(blank=True, null=True)
     date_of_birth = models.DateField(blank=True, null=True)
+    profile_picture = models.ImageField(upload_to='profiles/customers/', blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
+    history = HistoricalRecords()
 
     class Meta:
         managed = True
@@ -70,8 +72,10 @@ class UsersVendorprofile(models.Model):
     suffix = models.CharField(max_length=20, blank=True, null=True)
     business_name = models.CharField(max_length=255)
     business_address = models.TextField(blank=True, null=True)
+    profile_picture = models.ImageField(upload_to='profiles/vendors/', blank=True, null=True)
     is_approved = models.BooleanField(blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
+    history = HistoricalRecords()
 
     class Meta:
         managed = True

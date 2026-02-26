@@ -2,10 +2,11 @@ from django.shortcuts import render
 from rest_framework import generics, status, viewsets
 from rest_framework.response import Response
 from rest_framework.decorators import action
-from rest_framework.permissions import AllowAny
+from rest_framework.permissions import AllowAny, IsAuthenticated
+from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
 from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import RefreshToken
-from .serializers import RegisterSerializer, LoginSerializer, AdminUserSerializer
+from .serializers import RegisterSerializer, LoginSerializer, AdminUserSerializer, ProfileUpdateSerializer
 from .models import UsersUser, UsersCustomerprofile, UsersVendorprofile
 from .serializers import RegisterSerializer
 from .permissions import IsAdmin
@@ -80,7 +81,62 @@ class LoginView(APIView):
             "message": "Login successful"
         }, status=status.HTTP_200_OK)
     
+#User Profile ViewSet
+class UserProfileView(APIView):
+    permission_classes = [IsAuthenticated]
+    parser_classes = (MultiPartParser, FormParser, JSONParser)
 
+    def get_profile(self, user):
+        if user.role == 'CUSTOMER':
+            return UsersCustomerprofile.objects.get(user=user)
+        elif user.role == 'VENDOR':
+            return UsersVendorprofile.objects.get(user=user)
+        return None
+    
+    def get(self, request):
+        profile = self.get_profile(request.user)
+        if not profile:
+            return Response({"error": "Profile not found"}, status=404)
+        
+        serializer = ProfileUpdateSerializer(profile)
+        return Response(serializer.data)
+    
+    def patch(self, request):
+        profile = self.get_profile(request.user)
+        if not profile:
+            return Response({"error": "Profile not found"}, status=404)
+        
+        serializer = ProfileUpdateSerializer(profile, data=request.data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            return Response({
+                "message": "Profile updated successfully",
+                "profile": serializer.data
+            }, status=status.HTTP_200_OK)
+        
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+#Profile History View
+class ProfileHistoryView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        user = request.user
+        try:
+            if user.role == 'CUSTOMER':
+                profile = user.userscustomerprofile
+            else: 
+                profile = user.usersvendorprofile
+
+            history_qs = profile.history.all().select_related('history_user').order_by('-history_date')
+            serializer = ProfileUpdateSerializer(history_qs, many=True)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        
+        except (UsersCustomerprofile.DoesNotExist, UsersVendorprofile.DoesNotExist):
+            return Response({"error": "Profile not found"}, status=404)
+
+    
+#Admin User Management ViewSet
 class AdminUserViewSet(viewsets.ModelViewSet):
     serializer_class = AdminUserSerializer
     permission_classes = [IsAdmin]

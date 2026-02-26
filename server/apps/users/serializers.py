@@ -91,8 +91,66 @@ class LoginSerializer(serializers.Serializer):
         
         attrs['user'] = user
         return attrs
+    
+#Profile Update Serializer
+class ProfileUpdateSerializer(serializers.ModelSerializer):
+    #Common Fields
+    first_name = serializers.CharField(required=False, allow_blank=True)
+    middle_name = serializers.CharField(required=False, allow_blank=True)
+    last_name = serializers.CharField(required=False, allow_blank=True)
+    suffix = serializers.CharField(required=False, allow_blank=True)
+    profile_picture = serializers.ImageField(required=False)
 
-# Admin User Serializer
+    #Customer Fields
+    phone = serializers.CharField(required=False, allow_blank=True)
+    address = serializers.CharField(required=False, allow_blank=True)
+    date_of_birth = serializers.DateField(required=False)
+
+    #Vendor Fields
+    business_name = serializers.CharField(required=False, allow_blank=True)
+    business_address = serializers.CharField(required=False, allow_blank=True)
+
+    class Meta:
+        model = UsersUser
+        fields = [
+            'first_name', 'middle_name', 'last_name', 'suffix', 'profile_picture',
+            'phone', 'address', 'date_of_birth',
+            'business_name', 'business_address'
+        ]
+
+
+# Account History
+class FieldChangeSerializer(serializers.Serializer):
+    field = serializers.CharField()
+    old = serializers.CharField(allow_null=True)
+    new = serializers.CharField(allow_null=True)
+
+class ProfileHistorySerializer(serializers.Serializer):
+    date = serializers.DateTimeField(source='history_date')
+    history_type = serializers.CharField(source='get_history_type_display')
+    changed_by = serializers.EmailField(source='history_user.email', default="System")
+    changes = serializers.SerializerMethodField()
+
+    def get_changes(self, obj):
+        prev_record = obj.prev_record
+        if not prev_record:
+            return [] 
+        
+        delta = obj.diff_against(prev_record)
+        changes = []
+        for change in delta.changes:
+            old_val = str(change.old) if change.old else None
+            new_val = str(change.new) if change.new else None
+
+            changes.append({
+                "field": change.field,
+                "old": old_val,
+                "new": new_val
+            })
+            
+        return changes
+
+# Admin User Management Serializer
 class AdminUserSerializer(serializers.ModelSerializer):
     class Meta:
         model = UsersUser
@@ -136,3 +194,4 @@ class AdminUserSerializer(serializers.ModelSerializer):
 
         self.instance.delete()
         return self.instance
+    
