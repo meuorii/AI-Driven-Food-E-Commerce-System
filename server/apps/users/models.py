@@ -1,4 +1,4 @@
-from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, PermissionsMixin
+from django.contrib.auth.models import AbstractBaseUser, BaseUserManager
 from django.db import models
 from simple_history.models import HistoricalRecords
 
@@ -19,7 +19,7 @@ class UserManager(BaseUserManager):
         return self.create_user(email, password, role='ADMIN', **extra_fields)
     
 
-class UsersUser(AbstractBaseUser, PermissionsMixin):
+class UsersUser(AbstractBaseUser):
     id = models.BigAutoField(primary_key=True)
     email = models.EmailField(unique=True, max_length=255)
     role = models.CharField(max_length=20, default='CUSTOMER') 
@@ -34,9 +34,6 @@ class UsersUser(AbstractBaseUser, PermissionsMixin):
 
     objects = UserManager()
     USERNAME_FIELD = 'email'
-    REQUIRED_FIELDS = ['role']
-
-    USERNAME_FIELD = 'email'
     REQUIRED_FIELDS = []
 
     class Meta:
@@ -46,7 +43,7 @@ class UsersUser(AbstractBaseUser, PermissionsMixin):
 # Create your models here.
 class UsersCustomerprofile(models.Model):
     id = models.BigAutoField(primary_key=True)
-    user = models.OneToOneField('users.UsersUser', models.DO_NOTHING)
+    user = models.OneToOneField(UsersUser, on_delete=models.CASCADE, related_name='customer_profile')
     first_name = models.CharField(max_length=50, blank=True, null=True)
     middle_name = models.CharField(max_length=50, blank=True, null=True)
     last_name = models.CharField(max_length=50, blank=True, null=True)
@@ -65,7 +62,7 @@ class UsersCustomerprofile(models.Model):
 
 class UsersVendorprofile(models.Model):
     id = models.BigAutoField(primary_key=True)
-    user = models.OneToOneField('users.UsersUser', models.DO_NOTHING)
+    user = models.OneToOneField(UsersUser, on_delete=models.CASCADE, related_name='vendor_profile')
     first_name = models.CharField(max_length=50, blank=True, null=True)
     middle_name = models.CharField(max_length=50, blank=True, null=True)
     last_name = models.CharField(max_length=50, blank=True, null=True)

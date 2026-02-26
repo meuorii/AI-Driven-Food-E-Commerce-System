@@ -1,4 +1,4 @@
-from django.shortcuts import render
+from django.shortcuts import get_object_or_404
 from rest_framework import generics, status, viewsets
 from rest_framework.response import Response
 from rest_framework.decorators import action
@@ -6,7 +6,7 @@ from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
 from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import RefreshToken
-from .serializers import RegisterSerializer, LoginSerializer, AdminUserSerializer, ProfileUpdateSerializer
+from .serializers import RegisterSerializer, LoginSerializer, AdminUserSerializer, ProfileUpdateSerializer, CustomerHistorySerializer, VendorHistorySerializer
 from .models import UsersUser, UsersCustomerprofile, UsersVendorprofile
 from .serializers import RegisterSerializer
 from .permissions import IsAdmin
@@ -106,7 +106,11 @@ class UserProfileView(APIView):
         if not profile:
             return Response({"error": "Profile not found"}, status=404)
         
-        serializer = ProfileUpdateSerializer(profile, data=request.data, partial=True)
+        if request.user.role == 'CUSTOMER':
+            serializer = ProfileUpdateSerializer(profile, data=request.data, partial=True)
+        else: 
+            serializer = ProfileUpdateSerializer(profile, data=request.data, partial=True)
+            
         if serializer.is_valid():
             serializer.save()
             return Response({
@@ -124,12 +128,14 @@ class ProfileHistoryView(APIView):
         user = request.user
         try:
             if user.role == 'CUSTOMER':
-                profile = user.userscustomerprofile
+                profile = user.customer_profile
+                history_qs = profile.history.all().order_by('-history_date')
+                serializer = CustomerHistorySerializer(history_qs, many=True)
             else: 
-                profile = user.usersvendorprofile
+                profile = user.vendor_profile
+                history_qs = profile.history.all().order_by('-history_date')
+                serializer = VendorHistorySerializer(history_qs, many=True)
 
-            history_qs = profile.history.all().select_related('history_user').order_by('-history_date')
-            serializer = ProfileUpdateSerializer(history_qs, many=True)
             return Response(serializer.data, status=status.HTTP_200_OK)
         
         except (UsersCustomerprofile.DoesNotExist, UsersVendorprofile.DoesNotExist):
@@ -142,7 +148,9 @@ class AdminUserViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAdmin]
 
     def get_queryset(self):
-        queryset = UsersUser.objects.exclude(role='ADMIN').order_by('-created_at')
+        queryset = UsersUser.objects.exclude(role='ADMIN')\
+            .select_related('customer_profile', 'vendor_profile')\
+            .order_by('-created_at')
         role = self.request.query_params.get('role')
         if role in ['CUSTOMER', 'VENDOR']:
             queryset = queryset.filter(role=role)
@@ -174,10 +182,15 @@ class AdminUserViewSet(viewsets.ModelViewSet):
 
     @action(detail=True, methods=['delete'], url_path='delete')
     def delete_user(self, request, pk=None):
-        user = self.get_object()
+        user = get_object_or_404(UsersUser, pk=pk)
+
         if user.role == 'ADMIN':
             return Response({"detail": "Cannot delete an admin."}, status=status.HTTP_400_BAD_REQUEST)
-
         email = user.email
+        if hasattr(user, 'customer_profile'):
+            user.customer_profile.delete()
+        if hasattr(user, 'vendor_profile'):
+            user.vendor_profile.delete()
+
         user.delete()
         return Response({"detail": f"{email} deleted successfully."}, status=status.HTTP_200_OK)

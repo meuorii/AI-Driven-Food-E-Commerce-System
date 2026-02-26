@@ -1,9 +1,5 @@
 from rest_framework import serializers
-from .models import UsersUser, UsersCustomerprofile, UsersVendorprofile
 from django.contrib.auth import authenticate
-
-# Register Accoumt Serializer
-from rest_framework import serializers
 from .models import UsersUser, UsersCustomerprofile, UsersVendorprofile
 
 class RegisterSerializer(serializers.ModelSerializer):
@@ -99,7 +95,7 @@ class ProfileUpdateSerializer(serializers.ModelSerializer):
     middle_name = serializers.CharField(required=False, allow_blank=True)
     last_name = serializers.CharField(required=False, allow_blank=True)
     suffix = serializers.CharField(required=False, allow_blank=True)
-    profile_picture = serializers.ImageField(required=False)
+    profile_picture = serializers.ImageField(required=False, allow_null=True)
 
     #Customer Fields
     phone = serializers.CharField(required=False, allow_blank=True)
@@ -117,6 +113,25 @@ class ProfileUpdateSerializer(serializers.ModelSerializer):
             'phone', 'address', 'date_of_birth',
             'business_name', 'business_address'
         ]
+
+    def get_profile_picture(self, obj):
+        picture = getattr(obj, 'profile_picture', None)
+        if not picture:
+            return None
+        
+        if isinstance(picture, str):
+            if picture.startswith('http'):
+                return picture
+            return f"https://your-project.supabase.co/storage/v1/object/public/your-bucket/{picture}"
+        
+        try:
+            return picture.url
+        except:
+            return str(picture)
+    
+    def to_representation(self, instance):
+        ret = super().to_representation(instance)
+        return {k: v for k, v in ret.items() if v is not None}
 
 
 # Account History
@@ -147,15 +162,69 @@ class ProfileHistorySerializer(serializers.Serializer):
                 "old": old_val,
                 "new": new_val
             })
-            
+
         return changes
+
+#Customer and Vendor Profile Serializers
+class CustomerProfileSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = UsersCustomerprofile
+        exclude = ['user']
+
+class VendorProfileSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = UsersVendorprofile
+        exclude = ['user']
+
+class CustomerHistorySerializer(serializers.ModelSerializer):
+    profile_picture = serializers.SerializerMethodField()
+    class Meta:
+        model = UsersCustomerprofile.history.model
+        fields = [
+            'first_name', 'middle_name', 'last_name', 'suffix', 
+            'profile_picture', 'phone', 'address', 'date_of_birth'
+        ]
+
+    def get_profile_picture(self, obj):
+        if obj.profile_picture:
+            return f"/media/{obj.profile_picture}"
+        return None
+
+class VendorHistorySerializer(serializers.ModelSerializer):
+    profile_picture = serializers.SerializerMethodField()
+    class Meta:
+        model = UsersVendorprofile.history.model
+        fields = [
+            'first_name', 'middle_name', 'last_name', 'suffix', 
+            'profile_picture', 'business_name', 'business_address'
+        ]
+
+    def get_profile_picture(self, obj):
+            if obj.profile_picture:
+                return f"/media/{obj.profile_picture}"
+            return None
 
 # Admin User Management Serializer
 class AdminUserSerializer(serializers.ModelSerializer):
+    profile = serializers.SerializerMethodField()
     class Meta:
         model = UsersUser
-        fields = ['id', 'email', 'role', 'is_active', 'is_suspended', 'created_at']
+        fields = ['id', 'email', 'role', 'is_active', 'is_suspended', 'created_at', 'profile']
         read_only_fields = ['id', 'created_at']
+
+    def get_profile(self, obj):
+        if obj.role == 'CUSTOMER':
+            try:
+                return CustomerProfileSerializer(obj.customer_profile).data
+            except UsersCustomerprofile.DoesNotExist:
+                return None
+        elif obj.role == 'VENDOR':
+            try:
+                return VendorProfileSerializer(obj.vendor_profile).data
+            except UsersVendorprofile.DoesNotExist:
+                return None
+            
+        return None
 
     def suspend(self):
         if not self.instance:
