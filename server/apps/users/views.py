@@ -1,4 +1,5 @@
 from django.shortcuts import get_object_or_404
+from django.utils import timezone
 from rest_framework import generics, status, viewsets
 from rest_framework.response import Response
 from rest_framework.decorators import action
@@ -8,7 +9,6 @@ from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import RefreshToken
 from .serializers import RegisterSerializer, LoginSerializer, AdminUserSerializer, ProfileUpdateSerializer, CustomerHistorySerializer, VendorHistorySerializer
 from .models import UsersUser, UsersCustomerprofile, UsersVendorprofile
-from .serializers import RegisterSerializer
 from .permissions import IsAdmin
 
 class RegisterView(generics.CreateAPIView):
@@ -66,17 +66,22 @@ class LoginView(APIView):
         serializer = LoginSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         user = serializer.validated_data['user']
-
+        user.last_login = timezone.now()
+        user.save(update_fields=['last_login'])
         refresh = RefreshToken.for_user(user)
+        access_token = refresh.access_token
+        expires_at = timezone.now() + access_token.lifetime
         return Response({
             "user": {
                 "id": str(user.id),
                 "email": user.email,
                 "role": user.role,
+                "last_login": user.last_login
             },
             "tokens": {
                 "refresh": str(refresh),
                 "access": str(refresh.access_token),
+                "expires_at": expires_at.isoformat()
             },
             "message": "Login successful"
         }, status=status.HTTP_200_OK)
@@ -110,7 +115,7 @@ class UserProfileView(APIView):
             serializer = ProfileUpdateSerializer(profile, data=request.data, partial=True)
         else: 
             serializer = ProfileUpdateSerializer(profile, data=request.data, partial=True)
-            
+
         if serializer.is_valid():
             serializer.save()
             return Response({
@@ -194,3 +199,52 @@ class AdminUserViewSet(viewsets.ModelViewSet):
 
         user.delete()
         return Response({"detail": f"{email} deleted successfully."}, status=status.HTTP_200_OK)
+    
+    #Approve Vendor
+    @action(detail=True, methods=['post'], url_path='approve-vendor')
+    def approve_vendor(self, request, pk=None):
+        user = self.get_object()
+        if user.role != 'VENDOR':
+            return Response({"detail": "User is not a vendor."}, status=status.HTTP_400_BAD_REQUEST)
+        
+        vendor_profile = getattr(user, 'vendor_profile', None)
+        if not vendor_profile:
+            return Response({"detail": "Vendor profile not found."}, status=status.HTTP_404_NOT_FOUND)
+        
+        vendor_profile.is_approved = True
+        vendor_profile.save(update_fields=['is_approved'])
+        return Response({"detail": f"Vendor {user.email} approved successfully."}, status=status.HTTP_200_OK)
+    
+    #Reject Vendor
+    @action(detail=True, methods=['post'], url_path='reject-vendor')
+    def reject_vendor(self, request, pk=None):
+        user = self.get_object()
+        if user.role != 'VENDOR':
+            return Response({"detail": "User is not a vendor."}, status=status.HTTP_400_BAD_REQUEST)
+        
+        vendor_profile = getattr(user, 'vendor_profile', None)
+        if not vendor_profile:
+            return Response({"detail": "Vendor profile not found."}, status=status.HTTP_404_NOT_FOUND)
+        
+        vendor_profile.is_approved = False
+        vendor_profile.save(update_fields=['is_approved'])
+        return Response({"detail": f"Vendor {user.email} rejected successfully."}, status=status.HTTP_200_OK)
+    
+    #Get Vendor Activities
+    @action(detail=True, methods=['get'], url_path='vendor-activity')
+    def vendor_activity(self, request, pk=None):
+        user = self.get_object()
+        if user.role != 'VENDOR':
+            return Response({"detail": "User is not a vendor."}, status=status.HTTP_400_BAD_REQUEST)
+
+        vendor_profile = getattr(user, 'vendor_profile', None)
+        if not vendor_profile:
+            return Response({"detail": "Vendor profile not found."}, status=status.HTTP_404_NOT_FOUND)
+
+        activity_data = {
+            "is_approved": vendor_profile.is_approved,
+            "profile_created": vendor_profile.created_at,
+            "last_login": user.last_login,
+        }
+
+        return Response(activity_data, status=status.HTTP_200_OK)

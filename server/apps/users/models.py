@@ -70,7 +70,7 @@ class UsersVendorprofile(models.Model):
     business_name = models.CharField(max_length=255)
     business_address = models.TextField(blank=True, null=True)
     profile_picture = models.ImageField(upload_to='profiles/vendors/', blank=True, null=True)
-    is_approved = models.BooleanField(blank=True, null=True)
+    is_approved = models.BooleanField(null=True)
     created_at = models.DateTimeField(auto_now_add=True)
     history = HistoricalRecords()
 
