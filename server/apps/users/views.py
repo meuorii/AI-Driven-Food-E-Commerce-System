@@ -7,7 +7,7 @@ from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
 from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import RefreshToken
-from .serializers import RegisterSerializer, LoginSerializer, AdminUserSerializer, ProfileUpdateSerializer, CustomerHistorySerializer, VendorHistorySerializer
+from .serializers import RegisterSerializer, LoginSerializer, ChangePasswordSerializer, AdminUserSerializer, ProfileUpdateSerializer, CustomerHistorySerializer, VendorHistorySerializer
 from .models import UsersUser, UsersCustomerprofile, UsersVendorprofile
 from .permissions import IsAdmin
 
@@ -85,6 +85,20 @@ class LoginView(APIView):
             },
             "message": "Login successful"
         }, status=status.HTTP_200_OK)
+    
+#Forget Password View
+class ChangePasswordView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        serializer = ChangePasswordSerializer(
+            data = request.data,
+            context = {'request': request}
+        )
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+
+        return Response({"message": "Password changed successfully"}, status=status.HTTP_200_OK)
     
 #User Profile ViewSet
 class UserProfileView(APIView):

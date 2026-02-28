@@ -1,5 +1,5 @@
 from django.urls import path
-from .views import RegisterView, LoginView, AdminUserViewSet, UserProfileView, ProfileHistoryView
+from .views import RegisterView, LoginView, ChangePasswordView, AdminUserViewSet, UserProfileView, ProfileHistoryView
 
 admin_user_list = AdminUserViewSet.as_view({ "get": "list" })
 admin_user_detail = AdminUserViewSet.as_view({ "get": "retrieve" })
@@ -15,6 +15,7 @@ urlpatterns = [
     #Authentication
     path('register/', RegisterView.as_view(), name='register'),
     path('login/', LoginView.as_view(), name='login'),
+    path('change-password/', ChangePasswordView.as_view(), name='change-password'),
     path('profile/', UserProfileView.as_view(), name='user-profile'),
     path('profile/history/', ProfileHistoryView.as_view(), name='profile-history'),
 
