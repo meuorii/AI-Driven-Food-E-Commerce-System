@@ -42,12 +42,20 @@ class UsersUser(AbstractBaseUser):
 
 # Create your models here.
 class UsersCustomerprofile(models.Model):
+    GENDER_CHOICES = [
+        ('MALE', 'Male'),
+        ('FEMALE', 'Female'),
+        ('OTHER', 'Other'),
+        ('PREFER_NOT', 'Prefer not to say'),
+    ]
+
     id = models.BigAutoField(primary_key=True)
     user = models.OneToOneField(UsersUser, on_delete=models.CASCADE, related_name='customer_profile')
     first_name = models.CharField(max_length=50, blank=True, null=True)
     middle_name = models.CharField(max_length=50, blank=True, null=True)
     last_name = models.CharField(max_length=50, blank=True, null=True)
     suffix = models.CharField(max_length=20, blank=True, null=True)
+    genser = models.CharField(max_length=20, choices=GENDER_CHOICES, blank=True, null=True)
     phone = models.CharField(max_length=20, blank=True, null=True)
     address = models.TextField(blank=True, null=True)
     date_of_birth = models.DateField(blank=True, null=True)
@@ -61,12 +69,20 @@ class UsersCustomerprofile(models.Model):
 
 
 class UsersVendorprofile(models.Model):
+    GENDER_CHOICES = [
+        ('MALE', 'Male'),
+        ('FEMALE', 'Female'),
+        ('OTHER', 'Other'),
+        ('PREFER_NOT', 'Prefer not to say'),
+    ]
+
     id = models.BigAutoField(primary_key=True)
     user = models.OneToOneField(UsersUser, on_delete=models.CASCADE, related_name='vendor_profile')
     first_name = models.CharField(max_length=50, blank=True, null=True)
     middle_name = models.CharField(max_length=50, blank=True, null=True)
     last_name = models.CharField(max_length=50, blank=True, null=True)
     suffix = models.CharField(max_length=20, blank=True, null=True)
+    gender = models.CharField(max_length=20, choices=GENDER_CHOICES, blank=True, null=True)
     business_name = models.CharField(max_length=255)
     business_address = models.TextField(blank=True, null=True)
     profile_picture = models.ImageField(upload_to='profiles/vendors/', blank=True, null=True)

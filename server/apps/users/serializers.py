@@ -21,6 +21,15 @@ class RegisterSerializer(serializers.ModelSerializer):
     middle_name = serializers.CharField(required=False, allow_blank=True)
     last_name = serializers.CharField(required=False, allow_blank=True)
     suffix = serializers.CharField(required=False, allow_blank=True)
+    gender = serializers.ChoiceField(
+        choices = [
+            ('MALE', 'Male'),
+            ('FEMALE', 'Female'),
+            ('OTHER', 'Other'),
+            ('PREFER_NOT', 'Prefer not to say'),
+        ],
+        required=False,
+    )
 
     class Meta:
         model = UsersUser
@@ -28,7 +37,7 @@ class RegisterSerializer(serializers.ModelSerializer):
             'email', 'password', 'role',
             'phone', 'address', 'date_of_birth',
             'business_name', 'business_address',
-            'first_name', 'middle_name', 'last_name', 'suffix'
+            'first_name', 'middle_name', 'last_name', 'suffix', 'gender'
         ]
 
     def create(self, validated_data):
@@ -49,6 +58,7 @@ class RegisterSerializer(serializers.ModelSerializer):
             'middle_name': validated_data.pop('middle_name', None),
             'last_name': validated_data.pop('last_name', None),
             'suffix': validated_data.pop('suffix', None),
+            'gender': validated_data.pop('gender', None),
         }
 
         if role == 'CUSTOMER':
@@ -113,6 +123,15 @@ class ProfileUpdateSerializer(serializers.ModelSerializer):
     middle_name = serializers.CharField(required=False, allow_blank=True)
     last_name = serializers.CharField(required=False, allow_blank=True)
     suffix = serializers.CharField(required=False, allow_blank=True)
+    gender = serializers.ChoiceField(
+        choices = [
+            ('MALE', 'Male'),
+            ('FEMALE', 'Female'),
+            ('OTHER', 'Other'),
+            ('PREFER_NOT', 'Prefer not to say'),
+        ],
+        required=False,
+    )
     profile_picture = serializers.ImageField(required=False, allow_null=True)
 
     #Customer Fields
@@ -127,7 +146,7 @@ class ProfileUpdateSerializer(serializers.ModelSerializer):
     class Meta:
         model = UsersUser
         fields = [
-            'first_name', 'middle_name', 'last_name', 'suffix', 'profile_picture',
+            'first_name', 'middle_name', 'last_name', 'suffix', 'gender', 'profile_picture',
             'phone', 'address', 'date_of_birth',
             'business_name', 'business_address'
         ]
@@ -199,7 +218,7 @@ class CustomerHistorySerializer(serializers.ModelSerializer):
     class Meta:
         model = UsersCustomerprofile.history.model
         fields = [
-            'first_name', 'middle_name', 'last_name', 'suffix', 
+            'first_name', 'middle_name', 'last_name', 'gender', 'suffix', 
             'profile_picture', 'phone', 'address', 'date_of_birth'
         ]
 
@@ -213,7 +232,7 @@ class VendorHistorySerializer(serializers.ModelSerializer):
     class Meta:
         model = UsersVendorprofile.history.model
         fields = [
-            'first_name', 'middle_name', 'last_name', 'suffix', 
+            'first_name', 'middle_name', 'last_name', 'gender', 'suffix', 
             'profile_picture', 'business_name', 'business_address'
         ]
 
