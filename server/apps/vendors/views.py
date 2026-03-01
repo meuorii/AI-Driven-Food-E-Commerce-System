@@ -5,6 +5,7 @@ from rest_framework import status
 from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
 from .models import VendorsStall
 from .serializers import VendorStallSerializer
+from .utils import log_vendor_activity
 
 #Vendor Stall Management
 class VendorStallView(APIView):
@@ -37,7 +38,9 @@ class VendorStallView(APIView):
         data['vendor'] = request.user.vendor_profile.id
         serializer = VendorStallSerializer(data=data)
         if serializer.is_valid():
-            serializer.save()
+            stall =serializer.save()
+
+            log_vendor_activity(vendor=request.user.vendor_profile, action_type="Created stall", stall=stall)
             return Response({"message": "Stall created successfully", "stall": serializer.data}, status=201)
         return Response(serializer.errors, status=400)
 
@@ -60,6 +63,7 @@ class VendorStallView(APIView):
         serializer = VendorStallSerializer(stall, data={**data, **files}, partial=True)
         if serializer.is_valid():
             serializer.save()
+            log_vendor_activity(vendor=request.user.vendor_profile, action_type="Updated stall", stall=stall)
             return Response({"message": "Stall updated successfully", "stall": serializer.data})
         return Response(serializer.errors, status=400)
     
@@ -75,7 +79,7 @@ class VendorStallToggleView(APIView):
 
         stall.is_open = not stall.is_open
         stall.save(update_fields=['is_open'])
-
+        log_vendor_activity(vendor=request.user.vendor_profile, action_type="Toggled stall", stall=stall)
         return Response({
             "message": "Stall status updated successfully",
             "stall_id": stall.id,

@@ -15,3 +15,15 @@ class VendorsStall(models.Model):
     class Meta:
         managed = True
         db_table = 'vendors_stall'
+
+class VendorActivityLog(models.Model):
+    vendor = models.ForeignKey('users.UsersVendorprofile', on_delete=models.CASCADE, related_name='activities') 
+    action = models.CharField(max_length=255)
+    stall = models.ForeignKey('vendors.VendorsStall', on_delete=models.SET_NULL, null=True, blank=True)
+    timestamp = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-timestamp']
+
+    def __str__(self):
+        return f"{self.vendor.id} - {self.action}"

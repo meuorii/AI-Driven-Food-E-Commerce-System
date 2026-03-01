@@ -10,7 +10,7 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from .serializers import RegisterSerializer, LoginSerializer, ChangePasswordSerializer, AdminUserSerializer, ProfileUpdateSerializer, CustomerHistorySerializer, VendorHistorySerializer
 from .models import UsersUser, UsersCustomerprofile, UsersVendorprofile
 from .permissions import IsAdmin
-from apps.vendors.models import VendorsStall
+from apps.vendors.models import VendorsStall, VendorActivityLog
 from apps.vendors.serializers import VendorStallSerializer
 
 class RegisterView(generics.CreateAPIView):
@@ -259,14 +259,22 @@ class AdminUserViewSet(viewsets.ModelViewSet):
         if not vendor_profile:
             return Response({"detail": "Vendor profile not found."}, status=status.HTTP_404_NOT_FOUND)
 
-        stalls = VendorsStall.objects.filter(vendor=vendor_profile)
-        stall_data = VendorStallSerializer(stalls, many=True).data
+        activities = VendorActivityLog.objects.filter(vendor=vendor_profile).order_by('-timestamp')
+
+        activity_list = []
+        for activity in activities:
+            stall_data = VendorStallSerializer(activity.stall).data if activity.stall else None
+            activity_list.append({
+                "action": activity.action,
+                "stall": stall_data,  
+                "timestamp": activity.timestamp
+            })
 
         activity_data = {
             "is_approved": vendor_profile.is_approved,
             "profile_created": vendor_profile.created_at,
             "last_login": user.last_login,
-            "stalls": stall_data,  
+            "activity_history": activity_list
         }
 
         return Response(activity_data, status=status.HTTP_200_OK)
