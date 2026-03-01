@@ -1,11 +1,13 @@
 from rest_framework.views import APIView
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import IsAuthenticated, IsAdminUser
 from rest_framework.response import Response
-from rest_framework import status
+from rest_framework.decorators import action
+from rest_framework import status, viewsets
 from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
 from .models import VendorsStall
 from .serializers import VendorStallSerializer
 from .utils import log_vendor_activity
+from apps.users.serializers import VendorProfileSerializer
 
 #Vendor Stall Management
 class VendorStallView(APIView):
@@ -85,3 +87,89 @@ class VendorStallToggleView(APIView):
             "stall_id": stall.id,
             "is_open": stall.is_open
         }, status=200)
+    
+class AdminStallManagementViewSet(viewsets.ModelViewSet):
+    queryset = VendorsStall.objects.all()
+    serializer_class = VendorStallSerializer
+    permission_classes = [IsAuthenticated, IsAdminUser]
+
+    #Get All Stalls
+    @action(detail=False, methods=['get'], url_path='all-stalls')
+    def get_all_stalls(self, request):
+        stalls = VendorsStall.objects.all()
+        response_data = []
+
+        for stall in stalls:
+            stall_serialized = VendorStallSerializer(stall).data
+            vendor_profile = getattr(stall, 'vendor', None)
+            vendor_serialized = VendorProfileSerializer(vendor_profile).data if vendor_profile else None
+
+            response_data.append({
+                "stall": stall_serialized,
+                "vendor": vendor_serialized
+            })
+
+        return Response(response_data, status=status.HTTP_200_OK)
+    
+    #Get Single Stall ID
+    @action(detail=True, methods=['get'], url_path='stall-details')
+    def get_stall_by_id(self, request, pk=None):
+        stall = self.get_object()
+        stall_serialized = VendorStallSerializer(stall).data
+        vendor_profile = getattr(stall, 'vendor', None)
+        vendor_serialized = VendorProfileSerializer(vendor_profile).data if vendor_profile else None
+
+        return Response({
+            "stall": stall_serialized,
+            "vendor": vendor_serialized
+        }, status=status.HTTP_200_OK)
+
+    # Approve Stall
+    @action(detail=True, methods=['patch'], url_path='approve')
+    def approve_stall(self, request, pk=None):
+        stall = self.get_object()
+        if stall.is_approved:
+            return Response({"detail": "Stall is already approved."}, status=status.HTTP_400_BAD_REQUEST)
+
+        stall.is_approved = True
+        stall.save(update_fields=['is_approved'])
+
+        log_vendor_activity(
+            vendor=stall.vendor,
+            action_type="Approved stall",
+            stall=stall
+        )
+
+        stall_serialized = VendorStallSerializer(stall).data
+        vendor_serialized = VendorProfileSerializer(stall.vendor).data if stall.vendor else None
+
+        return Response({
+            "detail": f"Stall '{stall.name}' approved successfully.",
+            "stall": stall_serialized,
+            "vendor": vendor_serialized
+        }, status=status.HTTP_200_OK)
+    
+    # Reject Stall
+    @action(detail=True, methods=['patch'], url_path='reject')
+    def reject_stall(self, request, pk=None):
+        stall = self.get_object()
+        if not stall.is_approved:
+            return Response({"detail": "Stall is already not approved."}, status=status.HTTP_400_BAD_REQUEST)
+
+        stall.is_approved = False
+        stall.save(update_fields=['is_approved'])
+
+        log_vendor_activity(
+            vendor=stall.vendor,
+            action_type="Rejected stall",
+            stall=stall
+        )
+
+        stall_serialized = VendorStallSerializer(stall).data
+        vendor_serialized = VendorProfileSerializer(stall.vendor).data if stall.vendor else None
+
+        return Response({
+            "detail": f"Stall '{stall.name}' rejected successfully.",
+            "stall": stall_serialized,
+            "vendor": vendor_serialized
+        }, status=status.HTTP_200_OK)

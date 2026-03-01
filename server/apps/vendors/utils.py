@@ -17,10 +17,14 @@ def log_vendor_activity(vendor, action_type, stall=None):
         action_message = f"{pronoun} updated the stall named '{stall.name}'."
     elif action_type == "Toggled stall":
         if stall:
-            status = "open" if stall.is_open else "closed"
+            status = "opened" if stall.is_open else "closed"
             action_message = f"{pronoun} {status} the stall '{stall.name}'."
         else:
             action_message = f"{pronoun} toggled the stall status."
+    elif action_type == "Approved stall":
+        action_message = f"Stall '{stall.name}' was approved by an administrator."
+    elif action_type == "Rejected stall":
+        action_message = f"Stall '{stall.name}' was rejected by an administrator."
     else:
         action_message = f"{pronoun} performed an action: {action_type}."
     VendorActivityLog.objects.create(vendor=vendor, action=action_message, stall=stall)
