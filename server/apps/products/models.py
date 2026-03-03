@@ -3,6 +3,7 @@ from django.db import models
 # Create your models here.
 class ProductsCategory(models.Model):
     id = models.BigAutoField(primary_key=True)
+    stall = models.ForeignKey('vendors.VendorsStall', on_delete=models.CASCADE, related_name='categories')
     name = models.CharField(unique=True, max_length=255)
     slug = models.SlugField(unique=True, max_length=255)
     is_active = models.BooleanField(default=True)
