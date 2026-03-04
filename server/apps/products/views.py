@@ -58,59 +58,50 @@ class VendorCategoryView(APIView):
 class VendorFoodItemView(APIView):
     permission_classes = [IsAuthenticated]
 
-    def get(self, request, fooditem_id=None):
-        vendor_profile = getattr(request.user, 'vendor_profile', None)
-        if not vendor_profile:
-            return Response([], status=status.HTTP_200_OK)
-        
+    def _check_stall(self, request, stall_id):
+        try:
+            return VendorsStall.objects.get(id=stall_id, vendor=request.user.vendor_profile)
+        except:
+            raise PermissionDenied("You cannot access another stall.")
+    
+    def get(self, request, stall_id, category_id=None, fooditem_id=None):
+        stall = self._check_stall(request, stall_id)
+        queryset = ProductsFooditem.objects.filter(stall=stall)
+        if category_id:
+            get_object_or_404(ProductsCategory, id=category_id, stall=stall)
+            queryset = queryset.filter(category_id=category_id)
+
         if fooditem_id:
-            food_item = get_object_or_404(ProductsFooditem, id=fooditem_id, stall=vendor_profile)
+            food_item = get_object_or_404(queryset, id=fooditem_id)
             serializer = ProductsFooditemSerializer(food_item)
             return Response(serializer.data)
         
-        food_items = ProductsFooditem.objects.filter(stall=vendor_profile)
-        serializer = ProductsFooditemSerializer(food_items, many=True)
+        serializer = ProductsFooditemSerializer(queryset, many=True)
         return Response(serializer.data)
     
-    def post(self, request):
-        vendor_profile = getattr(request.user, 'vendor_profile', None)
-        if not vendor_profile:
-            raise PermissionDenied("You do not have stall.")
-        
-        serializer = ProductsFooditemSerializer(data=request.data)  
+    def post(self, request, stall_id, *args, **kwargs):
+        stall = self._check_stall(request, stall_id)
+        category_id = kwargs.get('category_id')
+        category = get_object_or_404(ProductsCategory, id=category_id, stall=stall)
+        serializer = ProductsFooditemSerializer(data=request.data)
         if serializer.is_valid():
-            serializer.save(stall=vendor_profile)
+            serializer.save(stall=stall, category=category, is_available=True, is_active=True)
             return Response(serializer.data, status=status.HTTP_201_CREATED)
-        
+
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     
-    def patch(self, request, fooditem_id):
-        vendor_profile = getattr(request.user, 'vendor_profile', None)
-        food_item = get_object_or_404(ProductsFooditem, id=fooditem_id, stall=vendor_profile)
+    def patch(self, request, stall_id, fooditem_id):
+        stall = self._check_stall(request, stall_id)
+        food_item = get_object_or_404(ProductsFooditem, id=fooditem_id, stall=stall)
         serializer = ProductsFooditemSerializer(food_item, data=request.data, partial=True)
         if serializer.is_valid():
             serializer.save()
-            return Response(serializer.data, status=status.HTTP_200_OK)
+            return Response(serializer.data)
         
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     
-    def delete(self, request, fooditem_id):
-        vendor_profile = getattr(request.user, 'vendor_profile', None)
-        food_item = get_object_or_404(ProductsFooditem, id=fooditem_id, stall=vendor_profile)
+    def delete(self, request, stall_id, fooditem_id):
+        stall = self._check_stall(request, stall_id)
+        food_item = get_object_or_404(ProductsFooditem, id=fooditem_id, stall=stall)
         food_item.delete()
-        return Response({"message": "Food item deleted successfully"}, status=status.HTTP_204_NO_CONTENT)
-    
-# Food Item by Category
-class VendorFoodItemByCategoryView(APIView):
-    permission_classes = [IsAuthenticated]
-
-    def get(self, request, category_id):
-        vendor_profile = getattr(request.user, 'vendor_profile', None)
-        if not vendor_profile:
-            return Response([], status=status.HTTP_200_OK)
-        
-        get_object_or_404(ProductsCategory, id=category_id, stall=vendor_profile)
-        
-        food_items = ProductsFooditem.objects.filter(stall=vendor_profile, category_id=category_id)
-        serializer = ProductsFooditemSerializer(food_items, many=True)
-        return Response(serializer.data)
+        return Response({ "message": "Food Item Delete Successfully" }, status=status.HTTP_204_NO_CONTENT)
