@@ -3,6 +3,7 @@ from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from rest_framework import status
 from rest_framework.exceptions import PermissionDenied
+from django.db import connection
 from django.shortcuts import get_object_or_404
 from .models import ProductsCategory, ProductsFooditem
 from apps.vendors.models import VendorsStall
@@ -52,6 +53,10 @@ class VendorCategoryView(APIView):
         stall = self._check_stall(request, stall_id)
         category = get_object_or_404(ProductsCategory, id=category_id, stall=stall)
         category.delete()
+        with connection.cursor() as cursor:
+            cursor.execute("SELECT COALESCE(MAX(id), 0) FROM products_category;")
+            max_id = cursor.fetchone()[0]
+            cursor.execute(f"ALTER SEQUENCE products_category_id_seq RESTART WITH {max_id + 1};")
         return Response({"message": "Category deleted successfully"}, status=status.HTTP_204_NO_CONTENT)
     
 # Vendor Food Item View
@@ -104,4 +109,8 @@ class VendorFoodItemView(APIView):
         stall = self._check_stall(request, stall_id)
         food_item = get_object_or_404(ProductsFooditem, id=fooditem_id, stall=stall)
         food_item.delete()
+        with connection.cursor() as cursor:
+            cursor.execute("SELECT COALESCE(MAX(id), 0) FROM products_category;")
+            max_id = cursor.fetchone()[0]
+            cursor.execute(f"ALTER SEQUENCE products_category_id_seq RESTART WITH {max_id + 1};")
         return Response({ "message": "Food Item Delete Successfully" }, status=status.HTTP_204_NO_CONTENT)
