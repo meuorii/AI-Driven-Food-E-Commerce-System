@@ -114,3 +114,26 @@ class VendorFoodItemView(APIView):
             max_id = cursor.fetchone()[0]
             cursor.execute(f"ALTER SEQUENCE products_category_id_seq RESTART WITH {max_id + 1};")
         return Response({ "message": "Food Item Delete Successfully" }, status=status.HTTP_204_NO_CONTENT)
+
+class VendorFoodItemToggleView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def _check_stall(self, request, stall_id):
+        try:
+            return VendorsStall.objects.get(id=stall_id, vendor=request.user.vendor_profile)
+        except VendorsStall.DoesNotExist:
+            raise PermissionDenied("You cannot access another stall.")
+        
+    def post(self, request, stall_id, fooditem_id):
+        stall = self._check_stall(request, stall_id)
+        food_item = get_object_or_404(ProductsFooditem, id=fooditem_id, stall=stall)
+
+        food_item.is_active = not food_item.is_active
+        food_item.is_available = not food_item.is_available
+        food_item.save(update_fields=['is_active', 'is_available'])
+
+        return Response({
+            "message": "Food item status toggled successfully",
+            "is_active": food_item.is_active,
+            "is_available": food_item.is_available
+        }, status=status.HTTP_200_OK)

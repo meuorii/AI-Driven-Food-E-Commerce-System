@@ -32,3 +32,9 @@ class ProductsFooditem(models.Model):
     class Meta:
         managed = True
         db_table = 'products_fooditem'
+
+    def save(self, *args, **kwargs):
+        if self.stock_quantity == 0:
+            self.is_active = False
+            self.is_available = False
+        super().save(*args, **kwargs)
