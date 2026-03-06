@@ -10,13 +10,6 @@ from apps.vendors.models import VendorsStall
 from .serializers import ProductsCategorySerializer, ProductsFooditemSerializer
 from .utils import log_product_activity
 
-#Helpers
-def apply_promo_to_queryset(queryset, promo_data):
-    return queryset.update(**promo_data)
-
-def remove_promo_from_queryset(queryset):
-    return queryset.update(discount_price=None, discount_percentage=None, promo_start=None, promo_end=None)
-
 # Vendor Category View
 class VendorCategoryView(APIView):
     permission_classes = [IsAuthenticated]
