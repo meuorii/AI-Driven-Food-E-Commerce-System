@@ -1,4 +1,6 @@
 from django.db import models
+from apps.users.models import UsersCustomerprofile
+from apps.vendors.models import VendorsStall
 
 # Create your models here.
 class ProductsCategory(models.Model):
@@ -42,3 +44,24 @@ class ProductsFooditem(models.Model):
             self.is_active = False
             self.is_available = False
         super().save(*args, **kwargs)
+
+class CartItem(models.Model):
+    id = models.BigAutoField(primary_key=True)
+    customer = models.ForeignKey(UsersCustomerprofile, on_delete=models.CASCADE, related_name='cart_items')
+    stall = models.ForeignKey(VendorsStall, on_delete=models.CASCADE, related_name='cart_items')
+    food_item = models.ForeignKey(ProductsFooditem, on_delete=models.CASCADE, related_name='cart_items')
+    quantity = models.PositiveIntegerField(default=1)
+    added_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = 'products_cartitem'
+        unique_together = ('customer', 'stall', 'food_item') 
+        ordering = ['-added_at']
+
+    def __str__(self):
+        return f"{self.customer.user.email} - {self.food_item.name} ({self.quantity})"
+    
+    @property
+    def total_price(self):
+        return self.quantity * self.food_item.price
