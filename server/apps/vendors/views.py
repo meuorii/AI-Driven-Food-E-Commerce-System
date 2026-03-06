@@ -55,18 +55,40 @@ class VendorStallView(APIView):
         if not stall:
             return Response({"error": "Stall not found"}, status=404)
 
-        data = request.data.copy()
-        files = {}
-        if 'logo' in request.FILES:
-            files['logo'] = request.FILES['logo']
-        if 'banner' in request.FILES:
-            files['banner'] = request.FILES['banner']
+        old_data = {
+            "name": stall.name,
+            "description": stall.description,
+            "logo": stall.logo.url if stall.logo else None,
+            "banner": stall.banner.url if stall.banner else None,
+            "is_open": stall.is_open
+        }
 
-        serializer = VendorStallSerializer(stall, data={**data, **files}, partial=True)
+        serializer = VendorStallSerializer(stall, data=request.data, partial=True)
+
         if serializer.is_valid():
-            serializer.save()
-            log_vendor_activity(vendor=request.user.vendor_profile, action_type="Updated stall", stall=stall)
-            return Response({"message": "Stall updated successfully", "stall": serializer.data})
+            stall = serializer.save()
+
+            new_data = {
+                "name": stall.name,
+                "description": stall.description,
+                "logo": stall.logo.url if stall.logo else None,
+                "banner": stall.banner.url if stall.banner else None,
+                "is_open": stall.is_open
+            }
+
+            log_vendor_activity(
+                vendor=request.user.vendor_profile,
+                action_type="Updated stall",
+                stall=stall,
+                old_data=old_data,
+                new_data=new_data
+            )
+
+            return Response({
+                "message": "Stall updated successfully",
+                "stall": VendorStallSerializer(stall).data
+            })
+
         return Response(serializer.errors, status=400)
     
 #Stall Open/Close Toggle 
@@ -78,10 +100,18 @@ class VendorStallToggleView(APIView):
             stall = VendorsStall.objects.get(id=stall_id, vendor=request.user.vendor_profile)
         except VendorsStall.DoesNotExist:
             return Response({"error": "Stall not found"}, status=404)
-
+        
+        old_data = {"is_open": stall.is_open}
         stall.is_open = not stall.is_open
         stall.save(update_fields=['is_open'])
-        log_vendor_activity(vendor=request.user.vendor_profile, action_type="Toggled stall", stall=stall)
+        new_data = {"is_open": stall.is_open}
+        log_vendor_activity(
+            vendor=request.user.vendor_profile, 
+            action_type="Toggled stall", 
+            stall=stall,
+            old_data=old_data,
+            new_data=new_data
+        )
         return Response({
             "message": "Stall status updated successfully",
             "stall_id": stall.id,

@@ -264,9 +264,26 @@ class AdminUserViewSet(viewsets.ModelViewSet):
         activity_list = []
         for activity in activities:
             stall_data = VendorStallSerializer(activity.stall).data if activity.stall else None
+            food_item_data = None
+            if activity.food_item:
+                food_item_data = {
+                    "id": activity.food_item.id,
+                    "name": activity.food_item.name,
+                    "category_id": activity.food_item.category.id if activity.food_item.category else None
+                }
+            category_data = None
+            if activity.category:
+                category_data = {
+                    "id": activity.category.id,
+                    "name": activity.category.name
+                }
+
             activity_list.append({
                 "action": activity.action,
-                "stall": stall_data,  
+                "stall": stall_data,
+                "food_item": food_item_data,
+                "category": category_data,
+                "changes": activity.changes,
                 "timestamp": activity.timestamp
             })
 
@@ -277,4 +294,4 @@ class AdminUserViewSet(viewsets.ModelViewSet):
             "activity_history": activity_list
         }
 
-        return Response(activity_data, status=status.HTTP_200_OK)
+        return Response(activity_data, status=200)

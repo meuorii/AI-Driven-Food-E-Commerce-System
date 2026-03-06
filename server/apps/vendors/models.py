@@ -21,6 +21,9 @@ class VendorActivityLog(models.Model):
     vendor = models.ForeignKey('users.UsersVendorprofile', on_delete=models.CASCADE, related_name='activities') 
     action = models.CharField(max_length=255)
     stall = models.ForeignKey('vendors.VendorsStall', on_delete=models.SET_NULL, null=True, blank=True)
+    food_item = models.ForeignKey('products.ProductsFooditem', on_delete=models.SET_NULL, null=True, blank=True)
+    category = models.ForeignKey('products.ProductsCategory', on_delete=models.SET_NULL, null=True, blank=True)
+    changes = models.JSONField(null=True, blank=True)
     timestamp = models.DateTimeField(auto_now_add=True)
 
     class Meta:
