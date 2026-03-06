@@ -10,6 +10,13 @@ from apps.vendors.models import VendorsStall
 from .serializers import ProductsCategorySerializer, ProductsFooditemSerializer
 from .utils import log_product_activity
 
+#Helpers
+def apply_promo_to_queryset(queryset, promo_data):
+    return queryset.update(**promo_data)
+
+def remove_promo_from_queryset(queryset):
+    return queryset.update(discount_price=None, discount_percentage=None, promo_start=None, promo_end=None)
+
 # Vendor Category View
 class VendorCategoryView(APIView):
     permission_classes = [IsAuthenticated]
@@ -186,3 +193,40 @@ class VendorFoodItemToggleView(APIView):
             "is_active": food_item.is_active,
             "is_available": food_item.is_available
         }, status=status.HTTP_200_OK)
+
+# Get All Products
+class AllFoodItemsView(APIView):
+    permission_classes = [IsAuthenticated]
+    
+    def get(self, request):
+        food_items = ProductsFooditem.objects.all()
+        serializer = ProductsFooditemSerializer(food_items, many=True)
+        return Response(serializer.data)
+    
+class FoodItemsByStallView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, stall_id):
+        stall = get_object_or_404(VendorsStall, id=stall_id)
+        food_items = ProductsFooditem.objects.filter(stall=stall)
+        serializer = ProductsFooditemSerializer(food_items, many=True)
+        return Response(serializer.data)
+    
+class FoodItemsByCategoryView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, category_id):
+        category = get_object_or_404(ProductsCategory, id=category_id)
+        food_items = ProductsFooditem.objects.filter(category=category)
+        serializer = ProductsFooditemSerializer(food_items, many=True)
+        return Response(serializer.data)
+    
+class FoodItemsByStallAndCategoryView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, stall_id, category_id):
+        stall = get_object_or_404(VendorsStall, id=stall_id)
+        category = get_object_or_404(ProductsCategory, id=category_id)
+        food_items = ProductsFooditem.objects.filter(stall=stall, category=category)
+        serializer = ProductsFooditemSerializer(food_items, many=True)
+        return Response(serializer.data)

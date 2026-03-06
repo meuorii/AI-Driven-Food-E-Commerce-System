@@ -1,5 +1,5 @@
 from django.urls import path
-from .views import VendorCategoryView, VendorFoodItemView, VendorFoodItemToggleView
+from .views import VendorCategoryView, VendorFoodItemView, VendorFoodItemToggleView, AllFoodItemsView, FoodItemsByStallView, FoodItemsByCategoryView, FoodItemsByStallAndCategoryView
 
 urlpatterns = [
     # Product Food Categories
@@ -10,6 +10,11 @@ urlpatterns = [
     path('vendor/stalls/<int:stall_id>/fooditems/', VendorFoodItemView.as_view(), name='vendor-fooditems-by-stall'),
     path('vendor/stalls/<int:stall_id>/categories/<int:category_id>/fooditems/', VendorFoodItemView.as_view(), name='vendor-fooditems-by-stall-category'),
     path('vendor/stalls/<int:stall_id>/fooditems/<int:fooditem_id>/', VendorFoodItemView.as_view(), name='vendor-fooditem-detail'),
+    path('vendor/stalls/<int:stall_id>/fooditems/<int:fooditem_id>/toggle/', VendorFoodItemToggleView.as_view(), name='vendor-fooditem-toggle'),
 
-    path('vendor/stalls/<int:stall_id>/fooditems/<int:fooditem_id>/toggle/', VendorFoodItemToggleView.as_view(), name='vendor-fooditem-toggle')
+    #Get All Products
+    path('vendor/fooditems/', AllFoodItemsView.as_view(), name='all_food_items'),
+    path('vendor/fooditems/stall/<int:stall_id>/', FoodItemsByStallView.as_view(), name='food_items_by_stall'),
+    path('vendor/fooditems/category/<int:category_id>/', FoodItemsByCategoryView.as_view(), name='food_items_by_category'),
+    path('vendor/fooditems/stall/<int:stall_id>/category/<int:category_id>/', FoodItemsByStallAndCategoryView.as_view(), name='food_items_by_stall_and_category'),
 ]
