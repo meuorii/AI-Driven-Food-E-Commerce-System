@@ -1,14 +1,15 @@
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
-from rest_framework import status
+from rest_framework import status, generics
 from rest_framework.exceptions import PermissionDenied
 from django.db import connection
 from django.shortcuts import get_object_or_404
 from .models import ProductsCategory, ProductsFooditem
 from apps.vendors.models import VendorsStall
-from .serializers import ProductsCategorySerializer, ProductsFooditemSerializer
+from .serializers import ProductsCategorySerializer, ProductsFooditemSerializer, StallSerializer, FoodItemSerializer
 from .utils import log_product_activity
+from .permissions import IsCustomer
 
 # Vendor Category View
 class VendorCategoryView(APIView):
@@ -223,3 +224,19 @@ class FoodItemsByStallAndCategoryView(APIView):
         food_items = ProductsFooditem.objects.filter(stall=stall, category=category)
         serializer = ProductsFooditemSerializer(food_items, many=True)
         return Response(serializer.data)
+    
+#Customer
+class CustomerStallListView(generics.ListAPIView):
+    queryset = VendorsStall.objects.filter(is_approved=True, is_open=True)
+    serializer_class = StallSerializer
+    permission_classes = [IsCustomer]
+
+class CustomerFoodItemListView(generics.ListAPIView):
+    queryset = ProductsFooditem.objects.filter(
+        is_available=True,
+        is_active=True,
+        stall__is_approved=True, 
+        stall__is_open=True
+    )
+    serializer_class = FoodItemSerializer
+    permission_classes = [IsCustomer]
