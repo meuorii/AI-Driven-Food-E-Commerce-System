@@ -5,11 +5,12 @@ from rest_framework import status, generics
 from rest_framework.exceptions import PermissionDenied
 from django.db import connection
 from django.shortcuts import get_object_or_404
-from .models import ProductsCategory, ProductsFooditem
+from .models import ProductsCategory, ProductsFooditem, CartItem
 from apps.vendors.models import VendorsStall
-from .serializers import ProductsCategorySerializer, ProductsFooditemSerializer, StallSerializer, FoodItemSerializer
+from .serializers import ProductsCategorySerializer, ProductsFooditemSerializer, StallSerializer, FoodItemSerializer, CartItemSerializer
 from .utils import log_product_activity
 from .permissions import IsCustomer
+from decimal import Decimal
 
 # Vendor Category View
 class VendorCategoryView(APIView):
@@ -240,3 +241,60 @@ class CustomerFoodItemListView(generics.ListAPIView):
     )
     serializer_class = FoodItemSerializer
     permission_classes = [IsCustomer]
+
+class CartView(APIView):
+    permission_classes = [IsCustomer]
+
+    def get(self, request):
+        customer = request.user.customer_profile
+        cart_items = CartItem.objects.filter(customer=customer)
+        serializer = CartItemSerializer(cart_items, many=True)
+        total_cart_price = sum([item.total_price for item in cart_items], Decimal('0.00'))
+        total_cart_price = "{:.2f}".format(total_cart_price)
+        return Response({
+            "cart_items": serializer.data,
+            "total_cart_price": total_cart_price
+        }, status=status.HTTP_200_OK)
+    
+    def post(self, request):
+        customer = request.user.customer_profile
+        food_item_id = request.data.get("food_item")
+        quantity = int(request.data.get("quantity", 1))
+        if not food_item_id:
+            return Response({"message": "food_item is required."}, status=status.HTTP_400_BAD_REQUEST)
+        food_item = get_object_or_404(ProductsFooditem, id=food_item_id)
+        if quantity > food_item.stock_quantity:
+            return Response({"message": f"Cannot add {quantity} {food_item.name} to cart. Only {food_item.stock_quantity} available."}, status=status.HTTP_400_BAD_REQUEST)
+        cart_item, created = CartItem.objects.get_or_create(
+            customer=customer,
+            stall=food_item.stall,
+            food_item=food_item,
+            defaults={"quantity": quantity}
+        )
+        if not created:
+            return Response({"message": f"{food_item.name} is already in your cart."}, status=status.HTTP_400_BAD_REQUEST)
+        
+        serializer = CartItemSerializer(cart_item)
+        return Response({"message": f"{food_item.name} added to cart successfully.", "data": serializer.data}, status=status.HTTP_201_CREATED)
+    
+    def patch(self, request, cart_id):
+        customer = request.user.customer_profile 
+        cart_item = get_object_or_404(CartItem, id=cart_id, customer=customer)
+        quantity = request.data.get("quantity")
+        if quantity is None or int(quantity) < 1:
+            return Response({"message": "Quantity must be a positive integer."}, status=status.HTTP_400_BAD_REQUEST)
+        quantity = int(quantity)
+        if quantity > cart_item.food_item.stock_quantity:
+            return Response({"message": f"Cannot set quantity to {quantity}. Only {cart_item.food_item.stock_quantity} {cart_item.food_item.name} available."}, status=status.HTTP_400_BAD_REQUEST)
+        cart_item.quantity = int(quantity)
+        cart_item.save()
+        serializer = CartItemSerializer(cart_item)
+        return Response({"message": f"{cart_item.food_item.name} quantity updated to {cart_item.quantity}.", "data": serializer.data}, status=status.HTTP_200_OK)
+    
+    def delete(Self, request, cart_id):
+        customer = request.user.customer_profile
+        cart_item = get_object_or_404(CartItem, id=cart_id, customer=customer)
+        food_name = cart_item.food_item.name
+        cart_item.delete()
+        return Response({"message": f"{food_name} removed from cart."}, status=status.HTTP_204_NO_CONTENT)
+            
