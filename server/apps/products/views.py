@@ -242,6 +242,18 @@ class CustomerFoodItemListView(generics.ListAPIView):
     serializer_class = FoodItemSerializer
     permission_classes = [IsCustomer]
 
+# Get single food item details
+class CustomerFoodItemDetailView(generics.RetrieveAPIView):
+    queryset = ProductsFooditem.objects.filter(
+        is_available=True,
+        is_active=True,
+        stall__is_approved=True,
+        stall__is_open=True
+    )
+    serializer_class = FoodItemSerializer
+    permission_classes = [IsCustomer]
+    lookup_field = 'id'
+
 class CartView(APIView):
     permission_classes = [IsCustomer]
 

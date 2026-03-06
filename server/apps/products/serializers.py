@@ -25,10 +25,11 @@ class StallSerializer(serializers.ModelSerializer):
 class FoodItemSerializer(serializers.ModelSerializer):
     stall = StallSerializer(read_only=True)
     category = serializers.StringRelatedField() 
+    image = serializers.ImageField(read_only=True)
 
     class Meta:
         model = ProductsFooditem
-        fields = ['id', 'stall', 'category', 'name', 'description', 'price', 'stock_quantity', 'is_available']
+        fields = ['id', 'stall', 'category', 'name', 'description', 'image', 'price', 'stock_quantity', 'is_available']
 
 class CartItemSerializer(serializers.ModelSerializer):
     food_item_name = serializers.CharField(source="food_item.name", read_only=True)

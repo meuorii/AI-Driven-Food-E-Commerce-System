@@ -1,5 +1,5 @@
 from django.urls import path
-from .views import VendorCategoryView, VendorFoodItemView, VendorFoodItemToggleView, AllFoodItemsView, FoodItemsByStallView, FoodItemsByCategoryView, FoodItemsByStallAndCategoryView, CustomerStallListView, CustomerFoodItemListView, CartView
+from .views import VendorCategoryView, VendorFoodItemView, VendorFoodItemToggleView, AllFoodItemsView, FoodItemsByStallView, FoodItemsByCategoryView, FoodItemsByStallAndCategoryView, CustomerStallListView, CustomerFoodItemListView, CustomerFoodItemDetailView, CartView
 
 urlpatterns = [
     # Product Food Categories
@@ -21,6 +21,7 @@ urlpatterns = [
     #Customer Get All Products and Stalls
     path('customer/stalls/', CustomerStallListView.as_view(), name='stalls-list'),
     path('customer/food-items/', CustomerFoodItemListView.as_view(), name='fooditems-list'),
+    path('customer/food-items/<int:id>/', CustomerFoodItemDetailView.as_view(), name='customer-fooditem-detail'),
 
     #Customer Cart Managemenet
     path("customer/cart/add/", CartView.as_view()),   
