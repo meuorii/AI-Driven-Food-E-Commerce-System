@@ -12,6 +12,7 @@ class ProductsCategorySerializer(serializers.ModelSerializer):
         read_only_fields = ['stall', 'created_at', 'updated_at']
 
 class ProductsFooditemSerializer(serializers.ModelSerializer):
+    image = serializers.ImageField(required=False, allow_null=True)
     class Meta:
         model = ProductsFooditem
         fields = ['id', 'category', 'name', 'description', 'image', 'price', 'stock_quantity', 'is_available', 'is_active', 'created_at', 'updated_at']
