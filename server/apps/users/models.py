@@ -100,7 +100,7 @@ class UsersVendorprofile(models.Model):
         managed = True
         db_table = 'users_vendorprofile'
 
-class UserRiderProfile(models.Model):
+class UsersRiderProfile(models.Model):
     GENDER_CHOICES = [
         ('MALE', 'Male'),
         ('FEMALE', 'Female'),
@@ -113,12 +113,14 @@ class UserRiderProfile(models.Model):
     first_name = models.CharField(max_length=50)
     middle_name = models.CharField(max_length=50, blank=True, null=True)
     last_name = models.CharField(max_length=50)
+    suffix = models.CharField(max_length=20, blank=True, null=True)
     gender = models.CharField(max_length=20, choices=GENDER_CHOICES, blank=True, null=True)
     phone = models.CharField(max_length=20)
     plate_number = models.CharField(max_length=50)
     license_number = models.CharField(max_length=100)
     profile_picture = models.ImageField(upload_to='profiles/riders/', blank=True, null=True)
     is_available = models.BooleanField(default=True)
+    is_approved = models.BooleanField(null=True)
     created_at = models.DateTimeField(auto_now_add=True)
     history = HistoricalRecords()
 

@@ -7,10 +7,10 @@ from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
 from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import RefreshToken
-from .serializers import RegisterSerializer, LoginSerializer, ChangePasswordSerializer, AdminUserSerializer, ProfileUpdateSerializer, CustomerHistorySerializer, VendorHistorySerializer
-from .models import UsersUser, UsersCustomerprofile, UsersVendorprofile
+from .serializers import RegisterSerializer, LoginSerializer, ChangePasswordSerializer, AdminUserSerializer, ProfileUpdateSerializer, CustomerHistorySerializer, VendorHistorySerializer, RiderHistorySerializer
+from .models import UsersUser, UsersCustomerprofile, UsersVendorprofile, UsersRiderProfile
 from .permissions import IsAdmin
-from apps.vendors.models import VendorsStall, VendorActivityLog
+from apps.vendors.models import VendorActivityLog
 from apps.vendors.serializers import VendorStallSerializer
 
 class RegisterView(generics.CreateAPIView):
@@ -48,6 +48,19 @@ class RegisterView(generics.CreateAPIView):
                 "business_name": profile.business_name,
                 "business_address": profile.business_address,
                 "is_approved": profile.is_approved,
+            }
+        elif user.role == 'RIDER':
+            profile = UsersRiderProfile.objects.get(user=user)
+            profile_data = {
+                "first_name": profile.first_name,
+                "middle_name": profile.middle_name,
+                "last_name": profile.last_name,
+                "suffix": profile.suffix,
+                "gender": profile.gender,
+                "phone": profile.phone,
+                "plate_number": profile.plate_number,
+                "license_number": profile.license_number,
+                "is_available": profile.is_available
             }
 
         return Response(
@@ -114,6 +127,8 @@ class UserProfileView(APIView):
             return UsersCustomerprofile.objects.get(user=user)
         elif user.role == 'VENDOR':
             return UsersVendorprofile.objects.get(user=user)
+        elif user.role == 'RIDER':
+            return UsersRiderProfile.objects.get(user=user)
         return None
     
     def get(self, request):
@@ -154,10 +169,14 @@ class ProfileHistoryView(APIView):
                 profile = user.customer_profile
                 history_qs = profile.history.all().order_by('-history_date')
                 serializer = CustomerHistorySerializer(history_qs, many=True)
-            else: 
+            elif user.role == 'VENDOR':
                 profile = user.vendor_profile
                 history_qs = profile.history.all().order_by('-history_date')
                 serializer = VendorHistorySerializer(history_qs, many=True)
+            elif user.role == 'RIDER':
+                profile = user.rider_profile
+                history_qs = profile.history.all().order_by('-history_date')
+                serializer = RiderHistorySerializer(history_qs, many=True)
 
             return Response(serializer.data, status=status.HTTP_200_OK)
         

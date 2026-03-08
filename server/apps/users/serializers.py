@@ -1,6 +1,6 @@
 from rest_framework import serializers
 from django.contrib.auth import authenticate
-from .models import UsersUser, UsersCustomerprofile, UsersVendorprofile
+from .models import UsersUser, UsersCustomerprofile, UsersVendorprofile, UsersRiderProfile
 
 class RegisterSerializer(serializers.ModelSerializer):
     # User fields
@@ -11,6 +11,10 @@ class RegisterSerializer(serializers.ModelSerializer):
     phone = serializers.CharField(required=False, allow_blank=True)
     address = serializers.CharField(required=False, allow_blank=True)
     date_of_birth = serializers.DateField(required=False)
+
+    # Rider fields
+    plate_number = serializers.CharField(required=False, allow_blank=True)
+    license_number = serializers.CharField(required=False, allow_blank=True)
 
     # Vendor fields
     business_name = serializers.CharField(required=False, allow_blank=True)
@@ -37,12 +41,13 @@ class RegisterSerializer(serializers.ModelSerializer):
             'email', 'password', 'role',
             'phone', 'address', 'date_of_birth',
             'business_name', 'business_address',
-            'first_name', 'middle_name', 'last_name', 'suffix', 'gender'
+            'first_name', 'middle_name', 'last_name', 'suffix', 'gender',
+            'plate_number', 'license_number'
         ]
 
     def create(self, validated_data):
         role = validated_data.get('role', 'CUSTOMER')
-        if role not in ['CUSTOMER', 'VENDOR']:
+        if role not in ['CUSTOMER', 'VENDOR', 'RIDER']:
             role = 'CUSTOMER'
 
         # Create user
@@ -74,6 +79,13 @@ class RegisterSerializer(serializers.ModelSerializer):
                 'business_address': validated_data.pop('business_address', None),
             })
             UsersVendorprofile.objects.create(user=user, **profile_data)
+        elif role == 'RIDER':
+            profile_data.update({
+                'phone': validated_data.pop('phone', None),
+                'plate_number': validated_data.pop('plate_number', None),
+                'license_number': validated_data.pop('license_number', None),
+            })
+            UsersRiderProfile.objects.create(user=user, **profile_data)
 
         return user
     
@@ -213,6 +225,11 @@ class VendorProfileSerializer(serializers.ModelSerializer):
         model = UsersVendorprofile
         exclude = ['user']
 
+class RiderProfileSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = UsersRiderProfile
+        exclude = ['user']
+
 class CustomerHistorySerializer(serializers.ModelSerializer):
     profile_picture = serializers.SerializerMethodField()
     class Meta:
@@ -240,6 +257,20 @@ class VendorHistorySerializer(serializers.ModelSerializer):
             if obj.profile_picture:
                 return f"/media/{obj.profile_picture}"
             return None
+    
+class RiderHistorySerializer(serializers.ModelSerializer):
+    profile_picture = serializers.SerializerMethodField()
+    class Meta:
+        model = UsersRiderProfile.history.model
+        fields = [
+            'first_name', 'middle_name', 'last_name', 'gender', 'suffix',
+            'profile_picture', 'phone', 'plate_number', 'license_number', 'is_available'
+        ]
+
+    def get_profile_picture(self, obj):
+        if obj.profile_picture:
+            return f"/media/{obj.profile_picture}"
+        return None
 
 # Admin User Management Serializer
 class AdminUserSerializer(serializers.ModelSerializer):
@@ -259,6 +290,11 @@ class AdminUserSerializer(serializers.ModelSerializer):
             try:
                 return VendorProfileSerializer(obj.vendor_profile).data
             except UsersVendorprofile.DoesNotExist:
+                return None
+        elif obj.role == 'RIDER':
+            try:
+                return RiderProfileSerializer(obj.rider_profile).data
+            except UsersRiderProfile.DoesNotExist:
                 return None
             
         return None
