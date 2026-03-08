@@ -20,9 +20,15 @@ class UserManager(BaseUserManager):
     
 
 class UsersUser(AbstractBaseUser):
+    ROLE_CHOICES = [
+        ('ADMIN', 'Admin'),
+        ('VENDOR', 'Vendor'),
+        ('CUSTOMER', 'Customer'),
+        ('RIDER', 'Rider'),
+    ]
     id = models.BigAutoField(primary_key=True)
     email = models.EmailField(unique=True, max_length=255)
-    role = models.CharField(max_length=20, default='CUSTOMER') 
+    role = models.CharField(max_length=20, choices=ROLE_CHOICES, default='CUSTOMER') 
     is_active = models.BooleanField(default=True)
     is_verified = models.BooleanField(default=False)
     is_suspended = models.BooleanField(default=False)
@@ -93,3 +99,29 @@ class UsersVendorprofile(models.Model):
     class Meta:
         managed = True
         db_table = 'users_vendorprofile'
+
+class UserRiderProfile(models.Model):
+    GENDER_CHOICES = [
+        ('MALE', 'Male'),
+        ('FEMALE', 'Female'),
+        ('OTHER', 'Other'),
+        ('PREFER_NOT', 'Prefer not to say'),
+    ]
+
+    id = models.BigAutoField(primary_key=True)
+    user = models.OneToOneField(UsersUser, on_delete=models.CASCADE, related_name="rider_profile")
+    first_name = models.CharField(max_length=50)
+    middle_name = models.CharField(max_length=50, blank=True, null=True)
+    last_name = models.CharField(max_length=50)
+    gender = models.CharField(max_length=20, choices=GENDER_CHOICES, blank=True, null=True)
+    phone = models.CharField(max_length=20)
+    plate_number = models.CharField(max_length=50)
+    license_number = models.CharField(max_length=100)
+    profile_picture = models.ImageField(upload_to='profiles/riders/', blank=True, null=True)
+    is_available = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    history = HistoricalRecords()
+
+    class Meta:
+        managed = True
+        db_table = 'users_riderprofile'
