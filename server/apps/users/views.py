@@ -180,7 +180,7 @@ class ProfileHistoryView(APIView):
 
             return Response(serializer.data, status=status.HTTP_200_OK)
         
-        except (UsersCustomerprofile.DoesNotExist, UsersVendorprofile.DoesNotExist):
+        except (UsersCustomerprofile.DoesNotExist, UsersVendorprofile.DoesNotExist, UsersRiderProfile.DoesNotExist):
             return Response({"error": "Profile not found"}, status=404)
 
     
@@ -314,3 +314,27 @@ class AdminUserViewSet(viewsets.ModelViewSet):
         }
 
         return Response(activity_data, status=200)
+    
+    @action(detail=True, methods=['get'], url_path='profile-history')
+    def profile_history(self, request, pk=None):
+        user = get_object_or_404(UsersUser, pk=pk)
+        try:
+            if user.role == 'CUSTOMER':
+                profile = user.customer_profile
+                history_qs = profile.history.all().order_by('-history_date')
+                serializer = CustomerHistorySerializer(history_qs, many=True)
+            elif user.role == 'VENDOR':
+                profile = user.vendor_profile
+                history_qs = profile.history.all().order_by('-history_date')
+                serializer = VendorHistorySerializer(history_qs, many=True)
+            elif user.role == 'RIDER':
+                profile = user.rider_profile
+                history_qs = profile.history.all().order_by('-history_date')
+                serializer = RiderHistorySerializer(history_qs, many=True)
+            else:
+                return Response({"detail": "Invalid user role."}, status=status.HTTP_400_BAD_REQUEST)
+            
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        
+        except (UsersCustomerprofile.DoesNotExist, UsersVendorprofile.DoesNotExist, UsersRiderProfile.DoesNotExist):
+            return Response({"detail": "Profile not found."}, status=status.HTTP_404_NOT_FOUND)

@@ -9,6 +9,7 @@ admin_user_delete = AdminUserViewSet.as_view({ "delete": "delete_user" })
 admin_vendor_approve = AdminUserViewSet.as_view({ "post": "approve_vendor" })
 admin_vendor_reject = AdminUserViewSet.as_view({ "post": "reject_vendor" })
 admin_vendor_get_activity = AdminUserViewSet.as_view({ "get": "vendor_activity" })
+admin_user_profile_history = AdminUserViewSet.as_view({ "get": "profile_history" })
 
 
 urlpatterns = [
@@ -30,4 +31,7 @@ urlpatterns = [
     path('admin/users/<int:pk>/approve-vendor/', admin_vendor_approve, name='admin-vendor-approve'),
     path('admin/users/<int:pk>/reject-vendor/', admin_vendor_reject, name='admin-vendor-reject'),
     path('admin/users/<int:pk>/vendor-activity/', admin_vendor_get_activity, name='admin-vendor-activity'),
+
+    # Admin Get User Profile History
+    path('admin/users/<int:pk>/profile-history/', admin_user_profile_history, name='admin-user-profile-history'),
 ]
