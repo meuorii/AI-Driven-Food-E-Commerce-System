@@ -7,8 +7,8 @@ from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
 from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import RefreshToken
-from .serializers import RegisterSerializer, LoginSerializer, ChangePasswordSerializer, AdminUserSerializer, ProfileUpdateSerializer, CustomerHistorySerializer, VendorHistorySerializer, RiderHistorySerializer
-from .models import UsersUser, UsersCustomerprofile, UsersVendorprofile, UsersRiderProfile
+from .serializers import RegisterSerializer, LoginSerializer, ChangePasswordSerializer, AdminUserSerializer, ProfileUpdateSerializer, CustomerHistorySerializer, VendorHistorySerializer, RiderHistorySerializer, CustomerAddressSerializer
+from .models import UsersUser, UsersCustomerprofile, UsersVendorprofile, UsersRiderProfile, UsersCustomerAddress
 from .permissions import IsAdmin
 from apps.vendors.models import VendorActivityLog
 from apps.vendors.serializers import VendorStallSerializer
@@ -338,3 +338,61 @@ class AdminUserViewSet(viewsets.ModelViewSet):
         
         except (UsersCustomerprofile.DoesNotExist, UsersVendorprofile.DoesNotExist, UsersRiderProfile.DoesNotExist):
             return Response({"detail": "Profile not found."}, status=status.HTTP_404_NOT_FOUND)
+
+class CustomerAddressView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        customer_profile = request.user.customer_profile
+        addresses = UsersCustomerAddress.objects.filter(customer=customer_profile)
+        serializer = CustomerAddressSerializer(addresses, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+    
+    def post(self, request):
+        customer_profile = request.user.customer_profile
+        serializer = CustomerAddressSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        if not UsersCustomerAddress.objects.filter(customer=customer_profile).exists():
+            serializer.validated_data['is_default'] = True
+        elif serializer.validated_data.get("is_default"):
+            UsersCustomerAddress.objects.filter(
+                customer=customer_profile,
+                is_default=True
+            ).update(is_default=False)
+
+        serializer.save(customer=customer_profile)
+        return Response({"message": "Address created successfully", "address": serializer.data}, status=status.HTTP_201_CREATED)
+    
+    def patch(self, request, pk):
+        customer_profile = request.user.customer_profile
+        address = get_object_or_404(UsersCustomerAddress, pk=pk, customer=customer_profile)
+        serializer = CustomerAddressSerializer(address, data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response({"message": "Address updated successfully", "address": serializer.data}, status=status.HTTP_200_OK)
+    
+    def delete(self, request, pk):
+        customer_profile = request.user.customer_profile
+        address = get_object_or_404(UsersCustomerAddress, pk=pk, customer=customer_profile)
+        was_default = address.is_default
+        address.delete()
+        if was_default:
+            first_address = UsersCustomerAddress.objects.filter(customer=customer_profile).first()
+            if first_address:
+                first_address.is_default = True
+                first_address.save(update_fields=['is_default'])
+        return Response({"message": "Address deleted successfully"}, status=status.HTTP_200_OK)
+    
+class CustomerAddressToggleDefaultView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, pk):
+        customer_profile = request.user.customer_profile
+        address = get_object_or_404(UsersCustomerAddress, pk=pk, customer=customer_profile)
+        UsersCustomerAddress.objects.filter(
+            customer=customer_profile,
+            is_default=True
+        ).exclude(id=address.id).update(is_default=False)
+        address.is_default = True
+        address.save(update_fields=['is_default'])
+        return Response({"message": "Address set as default successfully."}, status=status.HTTP_200_OK)

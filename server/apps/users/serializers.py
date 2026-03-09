@@ -1,6 +1,6 @@
 from rest_framework import serializers
 from django.contrib.auth import authenticate
-from .models import UsersUser, UsersCustomerprofile, UsersVendorprofile, UsersRiderProfile
+from .models import UsersUser, UsersCustomerprofile, UsersVendorprofile, UsersRiderProfile, UsersCustomerAddress
 
 class RegisterSerializer(serializers.ModelSerializer):
     # User fields
@@ -336,4 +336,20 @@ class AdminUserSerializer(serializers.ModelSerializer):
 
         self.instance.delete()
         return self.instance
+
+class CustomerAddressSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = UsersCustomerAddress
+        fields = [
+            'id',
+            'label',
+            'street',
+            'barangay',
+            'city',
+            'province',
+            'is_default',
+            'created_at',
+            'updated_at'
+        ]
+        read_only_fields = ['id', 'created_at', 'updated_at']
     

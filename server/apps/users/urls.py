@@ -1,5 +1,5 @@
 from django.urls import path
-from .views import RegisterView, LoginView, ChangePasswordView, AdminUserViewSet, UserProfileView, ProfileHistoryView
+from .views import RegisterView, LoginView, ChangePasswordView, AdminUserViewSet, UserProfileView, ProfileHistoryView, CustomerAddressView, CustomerAddressToggleDefaultView
 
 admin_user_list = AdminUserViewSet.as_view({ "get": "list" })
 admin_user_detail = AdminUserViewSet.as_view({ "get": "retrieve" })
@@ -34,4 +34,9 @@ urlpatterns = [
 
     # Admin Get User Profile History
     path('admin/users/<int:pk>/profile-history/', admin_user_profile_history, name='admin-user-profile-history'),
+
+    # Customer Address Management
+    path('customer/addresses/', CustomerAddressView.as_view(), name='customer-address-list'),
+    path('customer/addresses/<int:pk>/', CustomerAddressView.as_view(), name='customer-address-detail'),
+    path('customer/addresses/<int:pk>/set-default/', CustomerAddressToggleDefaultView.as_view(), name='customer-address-toggle-default')
 ]
