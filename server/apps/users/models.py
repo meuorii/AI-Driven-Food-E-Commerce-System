@@ -100,6 +100,25 @@ class UsersVendorprofile(models.Model):
         managed = True
         db_table = 'users_vendorprofile'
 
+class UsersCustomerAddress(models.Model):
+    id = models.BigAutoField(primary_key=True)
+    customer = models.ForeignKey('users.UsersCustomerProfile', on_delete=models.CASCADE, related_name='addresses', null=True, blank=True)
+    label = models.CharField(max_length=100, blank=True, null=True)
+    street = models.CharField(max_length=255)
+    barangay = models.CharField(max_length=255)
+    city = models.CharField(max_length=255)
+    province = models.CharField(max_length=255)
+    is_default = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = 'users_customeraddress'
+        ordering = ['-is_default', 'created_at']
+
+    def __str__(self):
+        return f"{self.label or 'Address'} - {self.city}"
+
 class UsersRiderProfile(models.Model):
     GENDER_CHOICES = [
         ('MALE', 'Male'),
