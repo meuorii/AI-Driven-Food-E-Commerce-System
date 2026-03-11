@@ -33,6 +33,8 @@ class OrdersOrder(models.Model):
     payment_method = models.CharField(max_length=20, choices=PAYMENT_METHOD_CHOICES)
     order_type = models.CharField(max_length=20, choices=ORDER_TYPE_CHOICES)
     delivery_address = models.TextField(blank=True, null=True)
+    cancelled_by = models.CharField(max_length=20, choices=[("customer", "Customer"), ("vendor", "Vendor")], null=True, blank=True )
+    cancel_reason = models.TextField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

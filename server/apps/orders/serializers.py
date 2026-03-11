@@ -39,9 +39,12 @@ class OrderSerializer(serializers.ModelSerializer):
             "payment_method",
             "order_type",
             "delivery_address",
+            'cancel_reason',
             "created_at",
+            "updated_at",
             "items"
         ]
+        read_only_fields = ['created_at', 'updated_at', 'status', 'order_code']
 
 class CheckoutSerializer(serializers.Serializer):
     cart_item = serializers.ListField(child=serializers.IntegerField(), allow_empty=False, write_only=True)
@@ -124,3 +127,28 @@ class CheckoutSerializer(serializers.Serializer):
             cart_items.delete()
 
         return order
+
+class VendorOrderSerializer(serializers.ModelSerializer):
+    items = serializers.SerializerMethodField()
+
+    class Meta:
+        model = OrdersOrder
+        fields = [
+            'id',
+            'order_code',
+            'status',
+            'total_amount',
+            'payment_method',   
+            'order_type',         
+            'delivery_address',  
+            'cancel_reason',
+            'created_at',
+            'updated_at',
+            'items',
+        ]
+        read_only_fields = ['created_at', 'updated_at', 'status', 'order_code']
+
+    def get_items(self, obj):
+        vendor_stall = self.context['request'].user.vendor_profile.vendorsstall_set.first()
+        vendor_items = obj.items.filter(food_item__stall=vendor_stall)
+        return OrderItemSerializer(vendor_items, many=True).data
