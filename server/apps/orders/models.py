@@ -28,6 +28,7 @@ class OrdersOrder(models.Model):
     order_code = models.CharField(max_length=20, unique=True, null=True, blank=True )
     customer = models.ForeignKey('users.UsersCustomerprofile', on_delete=models.CASCADE, related_name='orders', null=True, blank=True)
     stall = models.ForeignKey('vendors.VendorsStall', on_delete=models.CASCADE, related_name='orders')
+    rider = models.ForeignKey('users.UsersRiderProfile', null=True, blank=True, on_delete=models.SET_NULL, related_name="assigned_orders")
     total_amount = models.DecimalField(max_digits=10, decimal_places=2)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
     payment_method = models.CharField(max_length=20, choices=PAYMENT_METHOD_CHOICES)

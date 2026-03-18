@@ -5,7 +5,7 @@ import random
 import string
 from .models import OrdersOrder, OrdersOrderitem
 from apps.products.models import CartItem
-from apps.users.models import UsersCustomerAddress
+from apps.users.models import UsersCustomerAddress, UsersRiderProfile
 from apps.products.serializers import ProductsFooditemSerializer
 
 class OrderItemSerializer(serializers.ModelSerializer):
@@ -152,3 +152,13 @@ class VendorOrderSerializer(serializers.ModelSerializer):
         vendor_stall = self.context['request'].user.vendor_profile.vendorsstall_set.first()
         vendor_items = obj.items.filter(food_item__stall=vendor_stall)
         return OrderItemSerializer(vendor_items, many=True).data
+    
+class AvailableRidersSerializer(serializers.ModelSerializer):
+    name = serializers.SerializerMethodField()
+
+    class Meta:
+        model = UsersRiderProfile
+        fields = ["id", "name", "phone", "plate_number"]
+
+    def get_name(self, obj):
+        return f"{obj.first_name} {obj.last_name}"

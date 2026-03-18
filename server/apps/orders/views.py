@@ -3,7 +3,8 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework import status
 from .models import OrdersOrder
-from .serializers import CheckoutSerializer, OrderSerializer, VendorOrderSerializer
+from .serializers import CheckoutSerializer, OrderSerializer, VendorOrderSerializer, AvailableRidersSerializer
+from apps.users.models import UsersRiderProfile
 
 # Create your views here.
 class CheckoutView(APIView):
@@ -135,6 +136,15 @@ class VendorOrderView(APIView):
         elif action == "ready":
             if order.status != "preparing":
                 return Response({"error": "Order must be preparing before marking ready"}, status=status.HTTP_400_BAD_REQUEST)
+            if order.order_type == "delivery":
+                rider_id = request.data.get("rider_id")
+                if not rider_id:
+                    return Response({"error": "rider_id is required for delivery orders"}, status=status.HTTP_400_BAD_REQUEST)
+                try:
+                    rider = UsersRiderProfile.objects.get(id=rider_id, is_available=True, is_approved=True)
+                    order.rider = rider
+                except UsersRiderProfile.DoesNotExist:
+                    return Response({"error": "Rider not found or not available"}, status=status.HTTP_400_BAD_REQUEST)
             order.status = "ready_for_pickup"
 
         elif action == "complete":
@@ -149,6 +159,18 @@ class VendorOrderView(APIView):
 
         order.save()
         return Response({"message": f"Order status updated to {order.status}"}, status=status.HTTP_200_OK)
+
+class AvailableRidersView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        riders = UsersRiderProfile.objects.filter(
+            is_available=True,
+            is_approved=True
+        ).select_related("user")
+
+        serializer = AvailableRidersSerializer(riders, many=True)
+        return Response({"available_riders": serializer.data}, status=status.HTTP_200_OK)
 
 class RiderOrderView(APIView):
     permission_classes = [IsAuthenticated]
@@ -180,7 +202,7 @@ class RiderOrderView(APIView):
             return Response({"error": "Order not found"}, status=status.HTTP_404_NOT_FOUND)
         
         if action == "picked_up":
-            if order.status != "picked_up":
+            if order.status != "ready_for_pickup":
                 return Response({"error": "Order must be picked up first"}, status=status.HTTP_400_BAD_REQUEST)
             order.status = "picked_up"
         
@@ -189,7 +211,7 @@ class RiderOrderView(APIView):
                 return Response({"error": "Order must be picked up first"}, status=status.HTTP_400_BAD_REQUEST)
             order.status = "out_for_delivery"
 
-        elif action == "completed":
+        elif action == "complete":
             if order.status != "out_for_delivery":
                 return Response({"error": "Order must be out for delivery"}, status=status.HTTP_400_BAD_REQUEST)
             order.status = "completed"
@@ -197,5 +219,6 @@ class RiderOrderView(APIView):
         else:
             return Response({"error": "Invalid action"}, status=status.HTTP_400_BAD_REQUEST)
         
+        order.save()
         return Response({"message": f"Order status updated to {order.status}"})
     
