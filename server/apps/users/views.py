@@ -191,10 +191,10 @@ class AdminUserViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         queryset = UsersUser.objects.exclude(role='ADMIN')\
-            .select_related('customer_profile', 'vendor_profile')\
+            .select_related('customer_profile', 'vendor_profile', 'rider_profile')\
             .order_by('-created_at')
         role = self.request.query_params.get('role')
-        if role in ['CUSTOMER', 'VENDOR']:
+        if role in ['CUSTOMER', 'VENDOR', 'RIDER']:
             queryset = queryset.filter(role=role)
         return queryset
 
@@ -266,6 +266,42 @@ class AdminUserViewSet(viewsets.ModelViewSet):
         vendor_profile.is_approved = False
         vendor_profile.save(update_fields=['is_approved'])
         return Response({"detail": f"Vendor {user.email} rejected successfully."}, status=status.HTTP_200_OK)
+    
+    # Approve Rider
+    @action(detail=True, methods=['post'], url_path='approve-rider')
+    def approve_rider(self, request, pk=None):
+        user = self.get_object()
+        if user.role != 'RIDER':
+            return Response({"detail": "User is not a rider."}, status=status.HTTP_400_BAD_REQUEST)
+        
+        rider_profile = getattr(user, 'rider_profile', None)
+        if not rider_profile:
+            return Response({"detail": "Rider profile not found."}, status=status.HTTP_404_NOT_FOUND)
+        
+        if rider_profile.is_approved:
+            return Response({"detail": "Rider is already approved."}, status=status.HTTP_400_BAD_REQUEST)
+        
+        rider_profile.is_approved = True
+        rider_profile.save(update_fields=['is_approved'])
+        return Response({"detail": f"Rider {user.email} approved successfully."}, status=status.HTTP_200_OK)
+
+    # Reject Rider
+    @action(detail=True, methods=['post'], url_path='reject-rider')
+    def reject_rider(self, request, pk=None):
+        user = self.get_object()
+        if user.role != 'RIDER':
+            return Response({"detail": "User is not a rider."}, status=status.HTTP_400_BAD_REQUEST)
+        
+        rider_profile = getattr(user, 'rider_profile', None)
+        if not rider_profile:
+            return Response({"detail": "Rider profile not found."}, status=status.HTTP_404_NOT_FOUND)
+        
+        if rider_profile.is_approved == False:
+            return Response({"detail": "Rider is already rejected."}, status=status.HTTP_400_BAD_REQUEST)
+        
+        rider_profile.is_approved = False
+        rider_profile.save(update_fields=['is_approved'])
+        return Response({"detail": f"Rider {user.email} rejected successfully."}, status=status.HTTP_200_OK)
     
     #Get Vendor Activities
     @action(detail=True, methods=['get'], url_path='vendor-activity')
