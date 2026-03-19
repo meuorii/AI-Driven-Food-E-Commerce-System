@@ -23,6 +23,7 @@ class VendorActivityLog(models.Model):
     stall = models.ForeignKey('vendors.VendorsStall', on_delete=models.SET_NULL, null=True, blank=True)
     food_item = models.ForeignKey('products.ProductsFooditem', on_delete=models.SET_NULL, null=True, blank=True)
     category = models.ForeignKey('products.ProductsCategory', on_delete=models.SET_NULL, null=True, blank=True)
+    order = models.ForeignKey('orders.OrdersOrder', on_delete=models.SET_NULL, null=True, blank=True)
     changes = models.JSONField(null=True, blank=True)
     timestamp = models.DateTimeField(auto_now_add=True)
 
