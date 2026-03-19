@@ -11,7 +11,7 @@ from .serializers import (
     AvailableRidersSerializer
 )
 from apps.users.models import UsersRiderProfile
-from .utils import log_order_activity
+from .utils import log_order_activity, log_rider_activity
 
 
 def get_customer_name(order):
@@ -339,6 +339,7 @@ class RiderOrderView(APIView):
                 )
             order.status = "picked_up"
             order.save()
+            log_rider_activity(rider, "picked_up", order=order) 
             return Response(
                 order_response(f"Order #{order.id} for {customer_name} has been picked up. Head to the delivery address!", order),
                 status=status.HTTP_200_OK
@@ -352,6 +353,7 @@ class RiderOrderView(APIView):
                 )
             order.status = "out_for_delivery"
             order.save()
+            log_rider_activity(rider, "out_for_delivery", order=order)
             return Response(
                 order_response(f"Order #{order.id} for {customer_name} is now out for delivery.", order),
                 status=status.HTTP_200_OK
@@ -365,6 +367,7 @@ class RiderOrderView(APIView):
                 )
             order.status = "completed"
             order.save()
+            log_rider_activity(rider, "completed", order=order)
             return Response(
                 order_response(f"Order #{order.id} for {customer_name} has been delivered successfully!", order),
                 status=status.HTTP_200_OK
