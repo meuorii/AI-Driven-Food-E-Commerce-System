@@ -146,3 +146,18 @@ class UsersRiderProfile(models.Model):
     class Meta:
         managed = True
         db_table = 'users_riderprofile'
+
+class RiderActivityLog(models.Model):
+    rider = models.ForeignKey('users.UsersRiderProfile', on_delete=models.CASCADE, related_name='activities')
+    action = models.CharField(max_length=255)
+    order = models.ForeignKey('orders.OrdersOrder', on_delete=models.SET_NULL, null=True, blank=True, related_name='rider_activity_logs')
+    changes = models.JSONField(null=True, blank=True)
+    timestamp = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        managed = True
+        db_table = 'users_rideractivitylog'
+        ordering = ['-timestamp']
+
+    def __str__(self):
+        return f"{self.rider.id} - {self.action}"
