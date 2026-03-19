@@ -8,7 +8,7 @@ from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
 from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import RefreshToken
 from .serializers import RegisterSerializer, LoginSerializer, ChangePasswordSerializer, AdminUserSerializer, ProfileUpdateSerializer, CustomerHistorySerializer, VendorHistorySerializer, RiderHistorySerializer, CustomerAddressSerializer
-from .models import UsersUser, UsersCustomerprofile, UsersVendorprofile, UsersRiderProfile, UsersCustomerAddress
+from .models import UsersUser, UsersCustomerprofile, UsersVendorprofile, UsersRiderProfile, UsersCustomerAddress, RiderActivityLog
 from .permissions import IsAdmin
 from apps.vendors.models import VendorActivityLog
 from apps.vendors.serializers import VendorStallSerializer
@@ -350,6 +350,36 @@ class AdminUserViewSet(viewsets.ModelViewSet):
         }
 
         return Response(activity_data, status=200)
+    
+    @action(detail=True, methods=['get'], url_path='rider-activity')
+    def rider_activity(self, request, pk=None):
+        user = self.get_object()
+        if user.role != 'RIDER':
+            return Response({"detail": "User is not a rider."}, status=status.HTTP_400_BAD_REQUEST)
+
+        rider_profile = getattr(user, 'rider_profile', None)
+        if not rider_profile:
+            return Response({"detail": "Rider profile not found."}, status=status.HTTP_404_NOT_FOUND)
+
+        activities = RiderActivityLog.objects.filter(rider=rider_profile).order_by('-timestamp')
+
+        activity_list = []
+        for activity in activities:
+            activity_list.append({
+                "action": activity.action,
+                "order_code": activity.order.order_code if activity.order else None,
+                "timestamp": activity.timestamp,
+            })
+
+        activity_data = {
+            "is_approved": rider_profile.is_approved,
+            "is_available": rider_profile.is_available,
+            "profile_created": rider_profile.created_at,
+            "last_login": user.last_login,
+            "activity_history": activity_list,
+        }
+
+        return Response(activity_data, status=status.HTTP_200_OK)
     
     @action(detail=True, methods=['get'], url_path='profile-history')
     def profile_history(self, request, pk=None):

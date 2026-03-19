@@ -11,6 +11,7 @@ admin_vendor_reject = AdminUserViewSet.as_view({ "post": "reject_vendor" })
 admin_rider_approve = AdminUserViewSet.as_view({ "post": "approve_rider" })
 admin_rider_reject = AdminUserViewSet.as_view({ "post": "reject_rider" })
 admin_vendor_get_activity = AdminUserViewSet.as_view({ "get": "vendor_activity" })
+admin_rider_get_activity = AdminUserViewSet.as_view({ "get": "rider_activity" })
 admin_user_profile_history = AdminUserViewSet.as_view({ "get": "profile_history" })
 
 
@@ -36,7 +37,8 @@ urlpatterns = [
 
     # Admin Rider Management
     path('admin/users/<int:pk>/approve-rider/', admin_rider_approve, name='admin-rider-approve'),
-    path('admin/users/<int:pk>/reject-rider/', admin_rider_approve, name='admin-rider-reject'),
+    path('admin/users/<int:pk>/reject-rider/', admin_rider_reject, name='admin-rider-reject'),
+    path('admin/users/<int:pk>/rider-activity/', admin_rider_get_activity, name='admin-rider-activity'),
 
     # Admin Get User Profile History
     path('admin/users/<int:pk>/profile-history/', admin_user_profile_history, name='admin-user-profile-history'),
