@@ -25,6 +25,12 @@ class NotificationsNotification(models.Model):
         ('stall_toggled', 'Stall Toggled'),
         ('stall_approved', 'Stall Approved'),
         ('stall_rejected', 'Stall Rejected'),
+        ('category_created', 'Category Created'),
+        ('category_updated', 'Category Updated'),
+        ('category_deleted', 'Category Deleted'),
+        ('food_item_created', 'Food Item Created'),
+        ('food_item_toggled', 'Food Item Toggled'),
+        ('food_item_updated', 'Food Item Updated'),
     ]
 
     id = models.BigAutoField(primary_key=True)

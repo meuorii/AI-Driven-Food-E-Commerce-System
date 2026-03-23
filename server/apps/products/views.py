@@ -11,6 +11,14 @@ from .serializers import ProductsCategorySerializer, ProductsFooditemSerializer,
 from .utils import log_product_activity
 from .permissions import IsCustomer
 from decimal import Decimal
+from apps.notifications.utils import (
+    notify_category_created,   
+    notify_category_updated,   
+    notify_category_deleted,
+    notify_food_item_created,
+    notify_food_item_toggled,
+    notify_food_item_updated
+)
 
 # Vendor Category View
 class VendorCategoryView(APIView):
@@ -46,12 +54,14 @@ class VendorCategoryView(APIView):
                 stall=stall,
                 category=category
             )
+            notify_category_created(category, request.user.vendor_profile)
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     def patch(self, request, stall_id, category_id):
         stall = self._check_stall(request, stall_id)
         category = get_object_or_404(ProductsCategory, id=category_id, stall=stall) 
+        old_name = category.name
         old_data = ProductsCategorySerializer(category).data
         serializer = ProductsCategorySerializer(category, data=request.data, partial=True)
         if serializer.is_valid():
@@ -64,6 +74,7 @@ class VendorCategoryView(APIView):
                 old_data=old_data,
                 new_data=serializer.data
             )
+            notify_category_updated(category, request.user.vendor_profile, old_name)
             return Response(serializer.data, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
@@ -78,6 +89,7 @@ class VendorCategoryView(APIView):
             stall=stall,
             deleted_name=deleted_name
         )
+        notify_category_deleted(stall.name, deleted_name, request.user.vendor_profile)
         return Response({"message": "Category deleted successfully"}, status=status.HTTP_204_NO_CONTENT)
     
 # Vendor Food Item View
@@ -123,6 +135,7 @@ class VendorFoodItemView(APIView):
                 stall=stall,
                 food_item=food_item
             )
+            notify_food_item_created(food_item, request.user.vendor_profile)
             return Response(serializer.data, status=status.HTTP_201_CREATED)
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
@@ -134,6 +147,8 @@ class VendorFoodItemView(APIView):
         serializer = ProductsFooditemSerializer(food_item, data=request.data, partial=True)
         if serializer.is_valid():
             food_item = serializer.save()
+            new_data = ProductsFooditemSerializer(food_item).data
+            changes = {k: {"old": old_data[k], "new": new_data[k]} for k in old_data if old_data[k] != new_data[k]}
             log_product_activity(
                 vendor=request.user.vendor_profile,
                 action_type="Updated food item",
@@ -142,7 +157,7 @@ class VendorFoodItemView(APIView):
                 old_data=old_data,
                 new_data=serializer.data
             )
-
+            notify_food_item_updated(food_item, request.user.vendor_profile, changes) 
             return Response(serializer.data)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     
@@ -171,18 +186,16 @@ class VendorFoodItemToggleView(APIView):
     def post(self, request, stall_id, fooditem_id):
         stall = self._check_stall(request, stall_id)
         food_item = get_object_or_404(ProductsFooditem, id=fooditem_id, stall=stall)
-
         food_item.is_active = not food_item.is_active
         food_item.is_available = not food_item.is_available
         food_item.save(update_fields=['is_active', 'is_available'])
-
         log_product_activity(
             vendor=request.user.vendor_profile,
             action_type="Toggled food item",
             stall=stall,
             food_item=food_item
         )
-
+        notify_food_item_toggled(food_item, request.user.vendor_profile)
         return Response({
             "message": "Food item status toggled successfully",
             "is_active": food_item.is_active,

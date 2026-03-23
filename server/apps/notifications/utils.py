@@ -165,7 +165,7 @@ def notify_stall_toggled(stall, vendor_profile):
     customers = UsersUser.objects.filter(role='CUSTOMER', is_active=True)
     for customer in customers:
         notify(customer, title=f"'{stall.name}' is now {stall_status.capitalize()}!", message=f"The stall '{stall.name}' is now {stall_status}. {'You can now place orders!' if stall.is_open else 'Orders are temporarily unavailable.'}", notification_type="stall_toggled")
-        notify_admins(title=f"Stall {stall_status.capitalize()}", message=f"Vendor {vendor_name} {stall_status} their stall '{stall.name}'.", notification_type="stall_toggled")
+    notify_admins(title=f"Stall {stall_status.capitalize()}", message=f"Vendor {vendor_name} {stall_status} their stall '{stall.name}'.", notification_type="stall_toggled")
 
 # Stall Approved
 def notify_stall_approved(stall):
@@ -174,8 +174,8 @@ def notify_stall_approved(stall):
     customers = UsersUser.objects.filter(role='CUSTOMER', is_active=True)
     for customer in customers:
         notify(customer, title=f"New Stall Available: '{stall.name}'!", message=f"A new stall '{stall.name}' is now available and accepting orders. Check it out!", notification_type="stall_approved",)
-        notify(vendor_profile.user, title="Stall Approved!", message=f"Congratulations! Your stall '{stall.name}' has been approved. You can now start receiving orders.", notification_type="stall_approved")
-        notify_admins(title="Stall Approved", message=f"Stall '{stall.name}' by vendor {vendor_name} has been approved.", notification_type="stall_approved")
+    notify(vendor_profile.user, title="Stall Approved!", message=f"Congratulations! Your stall '{stall.name}' has been approved. You can now start receiving orders.", notification_type="stall_approved")
+    notify_admins(title="Stall Approved", message=f"Stall '{stall.name}' by vendor {vendor_name} has been approved.", notification_type="stall_approved")
 
 # Stall Rejected
 def notify_stall_rejected(stall):
@@ -183,4 +183,50 @@ def notify_stall_rejected(stall):
     vendor_name = f"{vendor_profile.first_name or ''} {vendor_profile.last_name or ''}".strip() or vendor_profile.user.email
     notify(vendor_profile.user, title="Stall Rejected", message=f"Unfortunately, your stall '{stall.name}' has been rejected. Please contact support for more information.", notification_type="stall_rejected")
     notify_admins(title="Stall Rejected", message=f"Stall '{stall.name}' by vendor {vendor_name} has been rejected.", notification_type="stall_rejected")
+
+# Created Food Category
+def notify_category_created(category, vendor_profile):
+     stall_name = category.stall.name
+     vendor_name = f"{vendor_profile.first_name or ''} {vendor_profile.last_name or ''}".strip() or vendor_profile.user.email
+     customers = UsersUser.objects.filter(role='CUSTOMER', is_active=True)
+     for customer in customers:
+         notify(customer, title=f"New Category at '{stall_name}'!", message=f"A new category '{category.name}' is now available at {stall_name}. Check out the new items!", notification_type="category_created")
+     notify_admins(title="New Category Added", message=f"Vendor {vendor_name} added a new category '{category.name}' to stall '{stall_name}'.", notification_type="category_created")
+
+# Updated Food Category
+def notify_category_updated(category, vendor_profile, old_name):
+    stall_name = category.stall.name
+    vendor_name = f"{vendor_profile.first_name or ''} {vendor_profile.last_name or ''}".strip() or vendor_profile.user.email
+    notify_admins(title="Category Updated", message=f"Vendor {vendor_name} renamed category '{old_name}' to '{category.name}' in stall '{stall_name}'.", notification_type="category_updated")
+
+# Deleted Food Category
+def notify_category_deleted(stall_name, deleted_name, vendor_profile):
+    vendor_name = f"{vendor_profile.first_name or ''} {vendor_profile.last_name or ''}".strip() or vendor_profile.user.email
+    notify_admins(title="Category Deleted",  message=f"Vendor {vendor_name} deleted category '{deleted_name}' from stall '{stall_name}'.", notification_type="category_deleted")
+
+# Created Food Item
+def notify_food_item_created(food_item, vendor_profile):
+    stall_name = food_item.stall.name
+    vendor_name = f"{vendor_profile.first_name or ''} {vendor_profile.last_name or ''}".strip() or vendor_profile.user.email
+    customers = UsersUser.objects.filter(role='CUSTOMER', is_active=True)
+    for customer in customers:
+        notify(customer, title=f"New Item Available at '{stall_name}'!", message=f"'{food_item.name}' is now available at {stall_name}. Check it out!", notification_type="food_item_created")
+    notify_admins(title="New Food Item Added", message=f"Vendor {vendor_name} added a new food item '{food_item.name}' to stall '{stall_name}'.", notification_type="food_item_created")
+
+# Toggled Food Item
+def notify_food_item_toggled(food_item, vendor_profile):
+    stall_name = food_item.stall.name
+    vendor_name = f"{vendor_profile.first_name or ''} {vendor_profile.last_name or ''}".strip() or vendor_profile.user.email
+    item_status = "available" if food_item.is_available else "unavailable"
+    customers = UsersUser.objects.filter(role='CUSTOMER', is_active=True)
+    for customer in customers:
+        notify(customer, title=f"'{food_item.name}' is now {item_status.capitalize()}!", message=f"'{food_item.name}' at {stall_name} is now {item_status}. {'You can now order it!' if food_item.is_available else 'It is temporarily unavailable.'}", notification_type="food_item_toggled")
+    notify_admins(title="Food Item Toggled", message=f"Vendor {vendor_name} marked '{food_item.name}' at '{stall_name}' as {item_status}.", notification_type="food_item_toggled")
+
+# Food Item Updated
+def notify_food_item_updated(food_item, vendor_profile, changes):
+    stall_name = food_item.stall.name
+    vendor_name = f"{vendor_profile.first_name or ''} {vendor_profile.last_name or ''}".strip() or vendor_profile.user.email
+    changed_fields = ", ".join(changes.keys()) if changes else "some fields"
+    notify_admins(title="Food Item Updated", message=f"Vendor {vendor_name} updated '{food_item.name}' at '{stall_name}'. Changed fields: {changed_fields}.", notification_type="food_item_updated")
     
