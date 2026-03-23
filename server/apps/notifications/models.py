@@ -1,14 +1,39 @@
 from django.db import models
-
-# Create your models here.
+from django.utils import timezone
 class NotificationsNotification(models.Model):
+    NOTIFICATION_TYPES = [
+        ('order_placed', 'Order Placed'),
+        ('order_confirmed', 'Order Confirmed'),
+        ('order_preparing', 'Order Preparing'),
+        ('order_ready', 'Order Ready'),
+        ('order_picked_up', 'Order Picked Up'),
+        ('order_out_for_delivery', 'Order Out for Delivery'),
+        ('order_completed', 'Order Completed'),
+        ('order_cancelled', 'Order Cancelled'),
+        ('account_approved', 'Account Approved'),
+        ('account_rejected', 'Account Rejected'),
+        ('account_suspended', 'Account Suspended'),
+        ('account_unsuspended', 'Account Unsuspended'),
+        ('stall_created', 'Stall Created'),
+        ('stall_updated', 'Stall Updated'),
+        ('stall_toggled', 'Stall Toggled'),
+        ('stall_approved', 'Stall Approved'),
+        ('stall_rejected', 'Stall Rejected'),
+    ]
+
     id = models.BigAutoField(primary_key=True)
-    user = models.ForeignKey('users.UsersUser', models.DO_NOTHING)
+    user = models.ForeignKey('users.UsersUser', on_delete=models.CASCADE, related_name='notifications')
     title = models.CharField(max_length=255)
     message = models.TextField()
-    is_read = models.BooleanField(blank=True, null=True)
-    created_at = models.DateTimeField(blank=True, null=True)
+    notification_type = models.CharField(max_length=50, choices=NOTIFICATION_TYPES, null=True, blank=True)
+    order = models.ForeignKey('orders.OrdersOrder', on_delete=models.SET_NULL, null=True, blank=True, related_name='notifications')
+    is_read = models.BooleanField(default=False)
+    created_at = models.DateTimeField(default=timezone.now)
 
     class Meta:
-        managed = False
+        managed = True
         db_table = 'notifications_notification'
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"{self.user.email} - {self.title}"
