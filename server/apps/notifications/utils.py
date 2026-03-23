@@ -146,4 +146,41 @@ def notify_new_user_registered(user):
         notify_admins(title="New Customer Registered", message=f"A new customer with email {user.email} has just registered.", notification_type="account_pending")
     elif user.role in ['VENDOR', 'RIDER']:
         notify_admins(title=f"New {role} Registered — Awaiting Approval", message=f"A new {role} with email {user.email} has just registered and is awaiting your approval.", notification_type="account_pending")
-        
+
+# Stall Created
+def notify_stall_created(stall, vendor_profile): 
+    vendor_name = f"{vendor_profile.first_name or ''} {vendor_profile.last_name or ''}".strip() or vendor_profile.user.email
+    notify_admins(title="New Stall Created", message=f"Vendor {vendor_name} created a new stall named '{stall.name}'. Please review and approve it.", notification_type="stall_created")
+
+# Stall Updated
+def notify_stall_updated(stall, vendor_profile, changes):
+    vendor_name = f"{vendor_profile.first_name or ''} {vendor_profile.last_name or ''}".strip() or vendor_profile.user.email
+    changed_fields = ", ".join(changes.keys()) if changes else "some fields"
+    notify_admins(title="Stall Updated", message=f"Vendor {vendor_name} updated stall '{stall.name}'. Changed fields: {changed_fields}.", notification_type="stall_updated")
+
+# Stall Toggle
+def notify_stall_toggled(stall, vendor_profile):
+    vendor_name = f"{vendor_profile.first_name or ''} {vendor_profile.last_name or ''}".strip() or vendor_profile.user.email
+    stall_status = "opened" if stall.is_open else "closed"  
+    customers = UsersUser.objects.filter(role='CUSTOMER', is_active=True)
+    for customer in customers:
+        notify(customer, title=f"'{stall.name}' is now {stall_status.capitalize()}!", message=f"The stall '{stall.name}' is now {stall_status}. {'You can now place orders!' if stall.is_open else 'Orders are temporarily unavailable.'}", notification_type="stall_toggled")
+        notify_admins(title=f"Stall {stall_status.capitalize()}", message=f"Vendor {vendor_name} {stall_status} their stall '{stall.name}'.", notification_type="stall_toggled")
+
+# Stall Approved
+def notify_stall_approved(stall):
+    vendor_profile = stall.vendor
+    vendor_name = f"{vendor_profile.first_name or ''} {vendor_profile.last_name or ''}".strip() or vendor_profile.user.email
+    customers = UsersUser.objects.filter(role='CUSTOMER', is_active=True)
+    for customer in customers:
+        notify(customer, title=f"New Stall Available: '{stall.name}'!", message=f"A new stall '{stall.name}' is now available and accepting orders. Check it out!", notification_type="stall_approved",)
+        notify(vendor_profile.user, title="Stall Approved!", message=f"Congratulations! Your stall '{stall.name}' has been approved. You can now start receiving orders.", notification_type="stall_approved")
+        notify_admins(title="Stall Approved", message=f"Stall '{stall.name}' by vendor {vendor_name} has been approved.", notification_type="stall_approved")
+
+# Stall Rejected
+def notify_stall_rejected(stall):
+    vendor_profile = stall.vendor
+    vendor_name = f"{vendor_profile.first_name or ''} {vendor_profile.last_name or ''}".strip() or vendor_profile.user.email
+    notify(vendor_profile.user, title="Stall Rejected", message=f"Unfortunately, your stall '{stall.name}' has been rejected. Please contact support for more information.", notification_type="stall_rejected")
+    notify_admins(title="Stall Rejected", message=f"Stall '{stall.name}' by vendor {vendor_name} has been rejected.", notification_type="stall_rejected")
+    

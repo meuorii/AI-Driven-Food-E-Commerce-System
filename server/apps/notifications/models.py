@@ -20,6 +20,11 @@ class NotificationsNotification(models.Model):
         ('stall_toggled', 'Stall Toggled'),
         ('stall_approved', 'Stall Approved'),
         ('stall_rejected', 'Stall Rejected'),
+        ('stall_created', 'Stall Created'),
+        ('stall_updated', 'Stall Updated'),
+        ('stall_toggled', 'Stall Toggled'),
+        ('stall_approved', 'Stall Approved'),
+        ('stall_rejected', 'Stall Rejected'),
     ]
 
     id = models.BigAutoField(primary_key=True)

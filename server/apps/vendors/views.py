@@ -8,6 +8,13 @@ from .models import VendorsStall
 from .serializers import VendorStallSerializer
 from .utils import log_vendor_activity
 from apps.users.serializers import VendorProfileSerializer
+from apps.notifications.utils import (
+    notify_stall_created,
+    notify_stall_updated,
+    notify_stall_toggled,
+    notify_stall_approved,
+    notify_stall_rejected,
+)
 
 #Vendor Stall Management
 class VendorStallView(APIView):
@@ -41,8 +48,8 @@ class VendorStallView(APIView):
         serializer = VendorStallSerializer(data=data)
         if serializer.is_valid():
             stall =serializer.save()
-
             log_vendor_activity(vendor=request.user.vendor_profile, action_type="Created stall", stall=stall)
+            notify_stall_created(stall, request.user.vendor_profile)
             return Response({"message": "Stall created successfully", "stall": serializer.data}, status=201)
         return Response(serializer.errors, status=400)
 
@@ -76,6 +83,8 @@ class VendorStallView(APIView):
                 "is_open": stall.is_open
             }
 
+            changes = {k: {"old": old_data[k], "new": new_data[k]} for k in old_data if old_data[k] != new_data[k]}
+
             log_vendor_activity(
                 vendor=request.user.vendor_profile,
                 action_type="Updated stall",
@@ -83,7 +92,7 @@ class VendorStallView(APIView):
                 old_data=old_data,
                 new_data=new_data
             )
-
+            notify_stall_updated(stall, request.user.vendor_profile, changes)
             return Response({
                 "message": "Stall updated successfully",
                 "stall": VendorStallSerializer(stall).data
@@ -112,6 +121,7 @@ class VendorStallToggleView(APIView):
             old_data=old_data,
             new_data=new_data
         )
+        notify_stall_toggled(stall, request.user.vendor_profile)
         return Response({
             "message": "Stall status updated successfully",
             "stall_id": stall.id,
@@ -163,16 +173,14 @@ class AdminStallManagementViewSet(viewsets.ModelViewSet):
 
         stall.is_approved = True
         stall.save(update_fields=['is_approved'])
-
         log_vendor_activity(
             vendor=stall.vendor,
             action_type="Approved stall",
             stall=stall
         )
-
+        notify_stall_approved(stall)
         stall_serialized = VendorStallSerializer(stall).data
         vendor_serialized = VendorProfileSerializer(stall.vendor).data if stall.vendor else None
-
         return Response({
             "detail": f"Stall '{stall.name}' approved successfully.",
             "stall": stall_serialized,
@@ -194,7 +202,7 @@ class AdminStallManagementViewSet(viewsets.ModelViewSet):
             action_type="Rejected stall",
             stall=stall
         )
-
+        notify_stall_rejected(stall)
         stall_serialized = VendorStallSerializer(stall).data
         vendor_serialized = VendorProfileSerializer(stall.vendor).data if stall.vendor else None
 
