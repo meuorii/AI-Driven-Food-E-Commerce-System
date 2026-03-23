@@ -12,7 +12,16 @@ from .serializers import (
 )
 from apps.users.models import UsersRiderProfile
 from .utils import log_order_activity, log_rider_activity
-
+from apps.notifications.utils import ( 
+    notify_order_placed,
+    notify_order_confirmed,
+    notify_order_preparing,
+    notify_order_ready,
+    notify_order_picked_up,
+    notify_order_out_for_delivery,
+    notify_order_completed,
+    notify_order_cancelled,
+)
 
 def get_customer_name(order):
     profile = order.customer
@@ -48,6 +57,7 @@ class CheckoutView(APIView):
 
         if serializer.is_valid():
             order = serializer.save()
+            notify_order_placed(order)
             response_data = OrderSerializer(order).data
             return Response(
                 {
@@ -101,6 +111,7 @@ class CustomerCancelOrderView(APIView):
             order.status = "cancelled"
             order.cancelled_by = "customer"
             order.save()
+            notify_order_cancelled(order)
             return Response(
                 order_response(f"Order #{order.id} has been successfully cancelled.", order),
                 status=status.HTTP_200_OK
@@ -171,6 +182,7 @@ class VendorOrderView(APIView):
             order.status = "confirmed"
             order.save()
             log_order_activity(vendor, "Confirmed order", order=order, stall=vendor_stall)
+            notify_order_confirmed(order)
             return Response(
                 order_response(f"Order #{order.id} for {customer_name} has been confirmed.", order),
                 status=status.HTTP_200_OK
@@ -195,6 +207,7 @@ class VendorOrderView(APIView):
             order.cancel_reason = reason
             order.save()
             log_order_activity(vendor, "Cancelled order", order=order, stall=vendor_stall)
+            notify_order_cancelled(order)
             return Response(
                 order_response(
                     f"Order #{order.id} for {customer_name} has been cancelled. Reason: {reason}",
@@ -212,6 +225,7 @@ class VendorOrderView(APIView):
             order.status = "preparing"
             order.save()
             log_order_activity(vendor, "Preparing order", order=order, stall=vendor_stall)
+            notify_order_preparing(order)
             return Response(
                 order_response(f"Order #{order.id} for {customer_name} is now being prepared.", order),
                 status=status.HTTP_200_OK
@@ -242,7 +256,7 @@ class VendorOrderView(APIView):
             order.status = "ready_for_pickup"
             order.save()
             log_order_activity(vendor, "Ready order", order=order, stall=vendor_stall)
-
+            notify_order_ready(order)
             if order.order_type == "delivery":
                 return Response(
                     order_response(
@@ -271,6 +285,7 @@ class VendorOrderView(APIView):
             order.status = "completed"
             order.save()
             log_order_activity(vendor, "Completed order", order=order, stall=vendor_stall)
+            notify_order_completed(order)
             return Response(
                 order_response(f"Order #{order.id} for {customer_name} has been completed. Thank you!", order),
                 status=status.HTTP_200_OK
@@ -340,6 +355,7 @@ class RiderOrderView(APIView):
             order.status = "picked_up"
             order.save()
             log_rider_activity(rider, "picked_up", order=order) 
+            notify_order_picked_up(order)
             return Response(
                 order_response(f"Order #{order.id} for {customer_name} has been picked up. Head to the delivery address!", order),
                 status=status.HTTP_200_OK
@@ -354,6 +370,7 @@ class RiderOrderView(APIView):
             order.status = "out_for_delivery"
             order.save()
             log_rider_activity(rider, "out_for_delivery", order=order)
+            notify_order_out_for_delivery(order)
             return Response(
                 order_response(f"Order #{order.id} for {customer_name} is now out for delivery.", order),
                 status=status.HTTP_200_OK
@@ -368,6 +385,7 @@ class RiderOrderView(APIView):
             order.status = "completed"
             order.save()
             log_rider_activity(rider, "completed", order=order)
+            notify_order_completed(order)
             return Response(
                 order_response(f"Order #{order.id} for {customer_name} has been delivered successfully!", order),
                 status=status.HTTP_200_OK
