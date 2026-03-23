@@ -61,6 +61,7 @@ def notify_order_ready(order):
             notify(order.rider.user, title="New Delivery Assigned!", message=f"You have been assigned to deliver order {order.order_code} for {customer_name}. Please pick it up from '{stall_name}'.", notification_type="order_ready", order=order)
         notify_admins(title="Order Ready for Delivery", message=f"Order {order.order_code} for {customer_name} is ready and assigned to rider {rider_name}.", notification_type="order_ready", order=order)
 
+# Order Picked Up
 def notify_order_picked_up(order):
     customer_name = get_customer_name(order)
     vendor_user = order.stall.vendor.user
@@ -69,6 +70,7 @@ def notify_order_picked_up(order):
     notify(vendor_user, title="Order Picked Up by Rider", message=f"Order {order.order_code} for {customer_name} has been picked up by rider {rider_name}.", notification_type="order_picked_up", order=order )
     notify_admins(title="Order Picked up", message=f"Order {order.order_code} for {customer_name} has been picked up by rider {rider_name}.", notification_type="order_picked_up", order=order)
 
+# Order Out for Delivery
 def notify_order_out_for_delivery(order):
     customer_name = get_customer_name(order)
     rider_name = f"{order.rider.first_name} {order.rider.last_name}".strip() if order.rider else "The rider"
@@ -77,6 +79,7 @@ def notify_order_out_for_delivery(order):
     notify(vendor_user, title="Order Out for Delivery", message=f"Order {order.order_code} for {customer_name} is now out for delivery by rider {rider_name}.", notification_type="order_out_for_delivery", order=order)
     notify_admins(title="Order Out for Delivery", message=f"Order {order.order_code} for {customer_name} is out for delivery by rider {rider_name}.", notification_type="order_out_for_delivery")
 
+# Order Completed
 def notify_order_completed(order):
     customer_name = get_customer_name(order)
     stall_name = order.stall.name
@@ -87,6 +90,7 @@ def notify_order_completed(order):
         notify(order.rider.user, title="Delivery Completed", message=f"You have successfully delivered order {order.order_code} to {customer_name}. Great job!", notification_type="order_completed", order=order) 
     notify_admins(title="Order Completed", message=f"Order {order.order_code} for {customer_name} from '{stall_name}' has been completed.", notification_type="order_completed", order=order)
 
+# Order Cancelled
 def notify_order_cancelled(order):
     customer_name = get_customer_name(order)
     stall_name = order.stall.name
@@ -104,3 +108,42 @@ def notify_order_cancelled(order):
     notify(order.customer.user, title="Order Cancelled", message=customer_message, notification_type="order_cancelled", order=order)
     notify(vendor_user, title="Order Cancelled", message=vendor_message, notification_type="order_cancelled", order=order)
     notify_admins(title="Order Cancelled", message=admin_message, notification_type="order_cancelled", order=order)
+
+# Vendor Approved
+def notify_vendor_approved(vendor_profile):
+    notify(vendor_profile.user, title="Vendor Account Approved!", message="Congratulations! Your vendor account has been approved. You can now start managing your stall.", notification_type="account_approved")
+    notify_admins(title="Vendor Approved", message=f"Vendor {vendor_profile.user.email} has been approved.", notification_type="account_approved",)
+
+# Vendor Rejected
+def notify_vendor_rejected(vendor_profile):
+    notify(vendor_profile.user, title="Vendor Account Rejected", message="Unfortunately, your vendor account application has been rejected. Please contact support for more information.", notification_type="account_rejected")
+    notify_admins(title="Vendor Rejected", message=f"Vendor {vendor_profile.user.email} has been rejected.", notification_type="account_rejected")
+
+# Rider Approved
+def notify_rider_approved(rider_profile):
+    notify(rider_profile.user, title="Rider Account Approved!", message="Congratulations! Your rider account has been approved. You can now start accepting deliveries.", notification_type="account_approved")
+    notify_admins(title="Rider Approved", message=f"Rider {rider_profile.user.email} has been approved.", notification_type="account_approved")
+
+# Rider Rejected
+def notify_rider_rejected(rider_profile):
+    notify(rider_profile.user, title="Rider Account Rejected", message="Unfortunately, your rider account application has been rejected. Please contact support for more information.", notification_type="account_rejected")
+    notify_admins(title="Rider Rejected", message=f"Rider {rider_profile.user.email} has been rejected.", notification_type="account_rejected")
+
+# User Suspended
+def notify_user_suspended(user):
+    notify(user, title="Account Suspended", message="Your account has been suspended. Please contact support for more information.", notification_type="account_suspended")
+    notify_admins(title="User Suspended", message=f"User {user.email} ({user.role}) has been suspended.", notification_type="account_suspended")
+
+#User Unsuspended
+def notify_user_unsuspended(user):
+    notify(user, title="Account Reinstated", message="Your account suspension has been lifted. You can now access your account again.", notification_type="account_unsuspended")
+    notify_admins(title="User Unsuspended", message=f"User {user.email} ({user.role}) has been unsuspended.", notification_type="account_unsuspended")
+
+# New Users Registered
+def notify_new_user_registered(user):
+    role = user.role.capitalize()
+    if user.role == 'CUSTOMER':
+        notify_admins(title="New Customer Registered", message=f"A new customer with email {user.email} has just registered.", notification_type="account_pending")
+    elif user.role in ['VENDOR', 'RIDER']:
+        notify_admins(title=f"New {role} Registered — Awaiting Approval", message=f"A new {role} with email {user.email} has just registered and is awaiting your approval.", notification_type="account_pending")
+        

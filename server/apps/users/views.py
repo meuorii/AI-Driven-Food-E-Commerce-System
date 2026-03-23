@@ -12,6 +12,14 @@ from .models import UsersUser, UsersCustomerprofile, UsersVendorprofile, UsersRi
 from .permissions import IsAdmin
 from apps.vendors.models import VendorActivityLog
 from apps.vendors.serializers import VendorStallSerializer
+from apps.notifications.utils import (
+    notify_vendor_approved,
+    notify_vendor_rejected,
+    notify_rider_approved,
+    notify_rider_rejected,
+    notify_user_suspended,
+    notify_user_unsuspended,
+)
 
 class RegisterView(generics.CreateAPIView):
     queryset = UsersUser.objects.all()
@@ -208,6 +216,7 @@ class AdminUserViewSet(viewsets.ModelViewSet):
 
         user.is_suspended = True
         user.save(update_fields=['is_suspended'])
+        notify_user_suspended(user)
         return Response({"detail": f"{user.email} suspended successfully."}, status=status.HTTP_200_OK)
 
     @action(detail=True, methods=['patch'], url_path='unsuspend')
@@ -220,6 +229,7 @@ class AdminUserViewSet(viewsets.ModelViewSet):
 
         user.is_suspended = False
         user.save(update_fields=['is_suspended'])
+        notify_user_unsuspended(user)
         return Response({"detail": f"{user.email} unsuspended successfully."}, status=status.HTTP_200_OK)
 
     @action(detail=True, methods=['delete'], url_path='delete')
@@ -250,6 +260,7 @@ class AdminUserViewSet(viewsets.ModelViewSet):
         
         vendor_profile.is_approved = True
         vendor_profile.save(update_fields=['is_approved'])
+        notify_vendor_approved(vendor_profile)
         return Response({"detail": f"Vendor {user.email} approved successfully."}, status=status.HTTP_200_OK)
     
     #Reject Vendor
@@ -265,6 +276,7 @@ class AdminUserViewSet(viewsets.ModelViewSet):
         
         vendor_profile.is_approved = False
         vendor_profile.save(update_fields=['is_approved'])
+        notify_vendor_rejected(vendor_profile)
         return Response({"detail": f"Vendor {user.email} rejected successfully."}, status=status.HTTP_200_OK)
     
     # Approve Rider
@@ -283,6 +295,7 @@ class AdminUserViewSet(viewsets.ModelViewSet):
         
         rider_profile.is_approved = True
         rider_profile.save(update_fields=['is_approved'])
+        notify_rider_approved(rider_profile)
         return Response({"detail": f"Rider {user.email} approved successfully."}, status=status.HTTP_200_OK)
 
     # Reject Rider
@@ -301,6 +314,7 @@ class AdminUserViewSet(viewsets.ModelViewSet):
         
         rider_profile.is_approved = False
         rider_profile.save(update_fields=['is_approved'])
+        notify_rider_rejected(rider_profile)
         return Response({"detail": f"Rider {user.email} rejected successfully."}, status=status.HTTP_200_OK)
     
     #Get Vendor Activities

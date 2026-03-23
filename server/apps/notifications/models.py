@@ -14,6 +14,7 @@ class NotificationsNotification(models.Model):
         ('account_rejected', 'Account Rejected'),
         ('account_suspended', 'Account Suspended'),
         ('account_unsuspended', 'Account Unsuspended'),
+        ('account_pending', 'Account Pending Approval'),
         ('stall_created', 'Stall Created'),
         ('stall_updated', 'Stall Updated'),
         ('stall_toggled', 'Stall Toggled'),
